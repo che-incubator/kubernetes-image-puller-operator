@@ -12,9 +12,9 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/rest"
 
-	"github.com/che-incubator/kubernetes-image-puller/pkg/apis"
-	"github.com/che-incubator/kubernetes-image-puller/pkg/controller"
-	"github.com/che-incubator/kubernetes-image-puller/version"
+	"github.com/che-incubator/kubernetes-image-puller-operator/pkg/apis"
+	"github.com/che-incubator/kubernetes-image-puller-operator/pkg/controller"
+	"github.com/che-incubator/kubernetes-image-puller-operator/version"
 
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	kubemetrics "github.com/operator-framework/operator-sdk/pkg/kube-metrics"

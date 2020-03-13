@@ -1,13 +1,17 @@
-module github.com/che-incubator/kubernetes-image-puller
+module github.com/che-incubator/kubernetes-image-puller-operator
 
 go 1.13
 
 require (
+	github.com/google/go-cmp v0.4.0
 	github.com/operator-framework/operator-sdk v0.15.2
 	github.com/spf13/pflag v1.0.5
-	k8s.io/api v0.0.0
-	k8s.io/apimachinery v0.0.0
+	github.com/tektoncd/pipeline v0.10.1 // indirect
+	go.uber.org/zap v1.10.0
+	k8s.io/api v0.17.0
+	k8s.io/apimachinery v0.17.1
 	k8s.io/client-go v12.0.0+incompatible
+	knative.dev/pkg v0.0.0-20200306005226-fc857aa77f79 // indirect
 	sigs.k8s.io/controller-runtime v0.4.0
 )
 

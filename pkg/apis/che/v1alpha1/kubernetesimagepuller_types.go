@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -9,16 +10,20 @@ import (
 
 // KubernetesImagePullerSpec defines the desired state of KubernetesImagePuller
 type KubernetesImagePullerSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
-	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
+	ConfigMapName        string `json:"configMapName,omitempty"`
+	DaemonsetName        string `json:"daemonsetName,omitempty"`
+	DeploymentName       string `json:"deploymentName,omitempty"`
+	Images               string `json:"images,omitempty"`
+	CachingIntervalHours string `json:"cachingIntervalHours,omitempty"`
+	CachingMemoryRequest string `json:"cachingMemoryRequest,omitempty"`
+	CachingMemoryLimit   string `json:"cachingMemoryLimit,omitempty"`
+	NodeSelector         string `json:"nodeSelector,omitempty"`
 }
 
 // KubernetesImagePullerStatus defines the observed state of KubernetesImagePuller
 type KubernetesImagePullerStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
-	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
+	ConfigMapName  string
+	DeploymentName string
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -45,4 +50,15 @@ type KubernetesImagePullerList struct {
 
 func init() {
 	SchemeBuilder.Register(&KubernetesImagePuller{}, &KubernetesImagePullerList{})
+}
+
+type KubernetesImagePullerConfig struct {
+	configMap *corev1.ConfigMap
+}
+
+func (config *KubernetesImagePullerConfig) WithDaemonsetName(name string) *KubernetesImagePullerConfig {
+	config.configMap.Data["DAEMONSET_NAME"] = name
+	return &KubernetesImagePullerConfig{
+		configMap: config.configMap,
+	}
 }

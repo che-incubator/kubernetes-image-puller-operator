@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"github.com/che-incubator/kubernetes-image-puller/pkg/controller/kubernetesimagepuller"
+	"github.com/che-incubator/kubernetes-image-puller-operator/pkg/controller/kubernetesimagepuller"
 )
 
 func init() {
