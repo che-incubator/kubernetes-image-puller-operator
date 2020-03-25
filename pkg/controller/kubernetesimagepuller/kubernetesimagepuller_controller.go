@@ -180,7 +180,7 @@ func (r *ReconcileKubernetesImagePuller) Reconcile(request reconcile.Request) (r
 
 	// If there is an existing deployment, roll it out
 	oldDeployment := &appsv1.Deployment{}
-	if err = r.client.Get(context.TODO(), types.NamespacedName{Name: "kubernetes-image-puller", Namespace: instance.Namespace}, oldDeployment); err != nil {
+	if err = r.client.Get(context.TODO(), types.NamespacedName{Name: "kubernetes-image-puller", Namespace: instance.Namespace}, oldDeployment); err != nil && !errors.IsNotFound(err) {
 		reqLogger.Error(err, "Error getting deployment")
 		return reconcile.Result{}, err
 	} else if err == nil {
