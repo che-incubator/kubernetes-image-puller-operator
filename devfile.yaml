@@ -1,3 +1,4 @@
+apiVersion: 1.0.0
 metadata:
   generateName: kubernetes-image-puller-operator-
 projects:
@@ -7,7 +8,7 @@ projects:
       type: git
       branch: master
 attributes:
-  persistVolumes: 'false'
+  persistVolumes: 'true'
 components:
   - id: ms-vscode/go/latest
     memoryLimit: 512Mi
@@ -29,7 +30,6 @@ components:
         name: GOPATH
       - value: /tmp/.cache
         name: GOCACHE
-apiVersion: 1.0.0
 commands:
   - name: build kubernetes-image-puller-operator
     actions:
