@@ -1,7 +1,0 @@
-apiVersion: che.eclipse.org/v1alpha1
-kind: KubernetesImagePuller
-metadata:
-  name: example-kubernetesimagepuller
-spec:
-  # Add fields here
-  size: 3
