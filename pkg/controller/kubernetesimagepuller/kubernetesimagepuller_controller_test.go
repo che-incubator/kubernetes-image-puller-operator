@@ -117,6 +117,24 @@ func defaultImagePullerWithConfigMapName() *chev1alpha1.KubernetesImagePuller {
 	}
 }
 
+func defaultImagePullerWithConfigMapAndDeploymentName() *chev1alpha1.KubernetesImagePuller {
+	return &chev1alpha1.KubernetesImagePuller{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "KubernetesImagePuller",
+			APIVersion: chev1alpha1.SchemeGroupVersion.String(),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            "test-puller",
+			Namespace:       namespace,
+			ResourceVersion: "2",
+		},
+		Spec: chev1alpha1.KubernetesImagePullerSpec{
+			ConfigMapName:  "k8s-image-puller",
+			DeploymentName: "kubernetes-image-puller",
+		},
+	}
+}
+
 func expectedDeployment(cr *chev1alpha1.KubernetesImagePuller) *appsv1.Deployment {
 	deployment := NewImagePullerDeployment(cr)
 	deployment.ResourceVersion = "1"
@@ -166,6 +184,30 @@ func TestSetsConfigMapName(t *testing.T) {
 	}
 }
 
+func TestSetsDeploymentName(t *testing.T) {
+	client := setupClient(t, defaultImagePullerWithConfigMapName())
+	got := &chev1alpha1.KubernetesImagePuller{}
+	want := defaultImagePullerWithConfigMapAndDeploymentName()
+
+	r := &ReconcileKubernetesImagePuller{
+		client: client,
+		scheme: scheme.Scheme,
+	}
+
+	_, err := r.Reconcile(reconcile.Request{NamespacedName: key})
+	if err != nil {
+		t.Errorf("Got error in reconcile: %v", err)
+	}
+
+	if err := client.Get(context.TODO(), types.NamespacedName{Namespace: namespace, Name: "test-puller"}, got); err != nil {
+		t.Errorf("Error getting KubernetesImagePuller")
+	}
+
+	if d := cmp.Diff(want, got); d != "" {
+		t.Errorf("Error (-want, +got): %s", d)
+	}
+}
+
 func TestCreatesRole(t *testing.T) {
 	type testcase struct {
 		name string
@@ -176,12 +218,12 @@ func TestCreatesRole(t *testing.T) {
 
 	for _, tc := range []testcase{{
 		name: "default",
-		cr:   defaultImagePullerWithConfigMapName(),
+		cr:   defaultImagePullerWithConfigMapAndDeploymentName(),
 		want: createDaemonsetRole,
 		got:  &rbacv1.Role{},
 	}} {
 		t.Run(tc.name, func(t *testing.T) {
-			client := setupClient(t, defaultImagePullerWithConfigMapName())
+			client := setupClient(t, tc.cr)
 			r := &ReconcileKubernetesImagePuller{
 				client: client,
 				scheme: scheme.Scheme,
@@ -213,12 +255,12 @@ func TestCreatesRoleBinding(t *testing.T) {
 
 	for _, tc := range []testcase{{
 		name: "default",
-		cr:   defaultImagePullerWithConfigMapName(),
+		cr:   defaultImagePullerWithConfigMapAndDeploymentName(),
 		want: createDaemonsetRoleBinding,
 		got:  &rbacv1.RoleBinding{},
 	}} {
 		t.Run(tc.name, func(t *testing.T) {
-			client := setupClient(t, defaultImagePullerWithConfigMapName(), createDaemonsetRole)
+			client := setupClient(t, tc.cr, createDaemonsetRole)
 			r := &ReconcileKubernetesImagePuller{
 				client: client,
 				scheme: scheme.Scheme,
@@ -250,12 +292,12 @@ func TestCreatesServiceAccount(t *testing.T) {
 
 	for _, tc := range []testcase{{
 		name: "default",
-		cr:   defaultImagePullerWithConfigMapName(),
+		cr:   defaultImagePullerWithConfigMapAndDeploymentName(),
 		want: defaultServiceAccount,
 		got:  &corev1.ServiceAccount{},
 	}} {
 		t.Run(tc.name, func(t *testing.T) {
-			client := setupClient(t, defaultImagePullerWithConfigMapName(), createDaemonsetRole, createDaemonsetRoleBinding)
+			client := setupClient(t, tc.cr, createDaemonsetRole, createDaemonsetRoleBinding)
 			r := &ReconcileKubernetesImagePuller{
 				client: client,
 				scheme: scheme.Scheme,
@@ -278,9 +320,9 @@ func TestCreatesServiceAccount(t *testing.T) {
 }
 
 func TestCreatesDeployment(t *testing.T) {
-	client := setupClient(t, defaultImagePullerWithConfigMapName(), expectedConfigMap(defaultImagePullerWithConfigMapName()), createDaemonsetRole, createDaemonsetRoleBinding, defaultServiceAccount)
+	client := setupClient(t, defaultImagePullerWithConfigMapAndDeploymentName(), expectedConfigMap(defaultImagePullerWithConfigMapAndDeploymentName()), createDaemonsetRole, createDaemonsetRoleBinding, defaultServiceAccount)
 	got := &appsv1.Deployment{}
-	want := expectedDeployment(defaultImagePullerWithConfigMapName())
+	want := expectedDeployment(defaultImagePullerWithConfigMapAndDeploymentName())
 	r := &ReconcileKubernetesImagePuller{
 		client: client,
 		scheme: scheme.Scheme,
@@ -310,7 +352,7 @@ func TestCreatesConfigMap(t *testing.T) {
 
 	for _, tc := range []testcase{{
 		name: "default",
-		cr:   defaultImagePullerWithConfigMapName(),
+		cr:   defaultImagePullerWithConfigMapAndDeploymentName(),
 		want: expectedConfigMap(defaultImagePuller()),
 		got:  &corev1.ConfigMap{},
 	},
@@ -326,8 +368,9 @@ func TestCreatesConfigMap(t *testing.T) {
 					Namespace: namespace,
 				},
 				Spec: chev1alpha1.KubernetesImagePullerSpec{
-					DaemonsetName: "other-daemonset-name",
-					ConfigMapName: "k8s-image-puller",
+					DaemonsetName:  "other-daemonset-name",
+					ConfigMapName:  "k8s-image-puller",
+					DeploymentName: "kubernetes-image-puller",
 				},
 			},
 			want: &corev1.ConfigMap{
@@ -366,9 +409,10 @@ func TestCreatesConfigMap(t *testing.T) {
 					Namespace: namespace,
 				},
 				Spec: chev1alpha1.KubernetesImagePullerSpec{
-					ConfigMapName: "k8s-image-puller",
-					DaemonsetName: "other-daemonset-name",
-					Images:        "che-devfile-registry=quay.io/eclipse/che-devfile-registry:latest,woopra-backend=quay.io/openshiftio/che-workspace-telemetry-woopra-backend:latest",
+					ConfigMapName:  "k8s-image-puller",
+					DeploymentName: "kubernetes-image-puller",
+					DaemonsetName:  "other-daemonset-name",
+					Images:         "che-devfile-registry=quay.io/eclipse/che-devfile-registry:latest,woopra-backend=quay.io/openshiftio/che-workspace-telemetry-woopra-backend:latest",
 				},
 			},
 			want: &corev1.ConfigMap{
@@ -407,7 +451,8 @@ func TestCreatesConfigMap(t *testing.T) {
 					Namespace: namespace,
 				},
 				Spec: chev1alpha1.KubernetesImagePullerSpec{
-					ConfigMapName: "my-configmap",
+					ConfigMapName:  "my-configmap",
+					DeploymentName: "kubernetes-image-puller",
 				},
 			},
 			want: &corev1.ConfigMap{
@@ -479,11 +524,12 @@ func TestUpdatesConfigMap(t *testing.T) {
 				Name:      "test-puller",
 			},
 			Spec: chev1alpha1.KubernetesImagePullerSpec{
-				DaemonsetName: "new-daemonset",
-				ConfigMapName: "k8s-image-puller",
+				DaemonsetName:  "new-daemonset",
+				ConfigMapName:  "k8s-image-puller",
+				DeploymentName: "kubernetes-image-puller",
 			},
 		},
-		old: expectedConfigMap(defaultImagePullerWithConfigMapName()),
+		old: expectedConfigMap(defaultImagePullerWithConfigMapAndDeploymentName()),
 		want: &corev1.ConfigMap{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "ConfigMap",
@@ -509,14 +555,15 @@ func TestUpdatesConfigMap(t *testing.T) {
 		got: &corev1.ConfigMap{},
 	}, {
 		name: "change the configmap name",
-		old:  expectedConfigMap(defaultImagePullerWithConfigMapName()),
+		old:  expectedConfigMap(defaultImagePullerWithConfigMapAndDeploymentName()),
 		cr: &chev1alpha1.KubernetesImagePuller{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: namespace,
 				Name:      "test-puller",
 			},
 			Spec: chev1alpha1.KubernetesImagePullerSpec{
-				ConfigMapName: "new-configmap",
+				ConfigMapName:  "new-configmap",
+				DeploymentName: "kubernetes-image-puller",
 			},
 		},
 		want: &corev1.ConfigMap{
@@ -570,6 +617,32 @@ func TestUpdatesConfigMap(t *testing.T) {
 	}
 }
 
-func TestShouldRolloutNewDeploymentOnCRChange(t *testing.T) {
+func TestDeletesOldDeploymentOnNameChange(t *testing.T) {
+	type testcase struct {
+		name  string
+		oldCr *chev1alpha1.KubernetesImagePuller
+		newCr *chev1alpha1.KubernetesImagePuller
+	}
 
+	for _, tc := range []testcase{} {
+		t.Run(tc.name, func(t *testing.T) {
+			c := setupClient(t, tc.newCr, NewImagePullerDeployment(tc.newCr), createDaemonsetRole, createDaemonsetRole, defaultServiceAccount, expectedConfigMap(tc.newCr))
+			r := &ReconcileKubernetesImagePuller{
+				client: c,
+				scheme: scheme.Scheme,
+			}
+			_, err := r.Reconcile(reconcile.Request{NamespacedName: key})
+			if err != nil {
+				t.Errorf("Got error in reconcile: %v", err)
+			}
+			deployments := &appsv1.DeploymentList{}
+			c.List(context.TODO(), deployments, client.MatchingLabels{"app": "kubernetes-image-puller"})
+			if err != nil {
+				t.Errorf("Error listing deployments: %v", err)
+			}
+			if len(deployments.Items) > 1 {
+				t.Errorf("Expected 1 deployment but got %v", len(deployments.Items))
+			}
+		})
+	}
 }

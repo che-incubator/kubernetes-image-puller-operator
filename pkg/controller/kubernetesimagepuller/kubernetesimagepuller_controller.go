@@ -129,6 +129,16 @@ func (r *ReconcileKubernetesImagePuller) Reconcile(request reconcile.Request) (r
 		return reconcile.Result{}, nil
 	}
 
+	// If there is no set deployment name, update with the default deployment name
+	if instance.Spec.DeploymentName == "" {
+		instance.Spec.DeploymentName = "kubernetes-image-puller"
+		if err = r.client.Update(context.TODO(), instance); err != nil {
+			reqLogger.Error(err, "Error updating KubernetesImagePuller")
+			return reconcile.Result{}, err
+		}
+		return reconcile.Result{}, nil
+	}
+
 	// Create the Role to allow the ServiceAccount to create Daemonsets
 	foundRole := &rbacv1.Role{}
 	err = r.client.Get(context.TODO(), types.NamespacedName{Namespace: instance.Namespace, Name: "create-daemonset"}, foundRole)
@@ -178,15 +188,15 @@ func (r *ReconcileKubernetesImagePuller) Reconcile(request reconcile.Request) (r
 		return reconcile.Result{}, err
 	}
 
-	// If there is an existing deployment, roll it out
+	// If there is an existing deployment, roll it out on configmap change
 	oldDeployment := &appsv1.Deployment{}
-	if err = r.client.Get(context.TODO(), types.NamespacedName{Name: "kubernetes-image-puller", Namespace: instance.Namespace}, oldDeployment); err != nil && !errors.IsNotFound(err) {
+	if err = r.client.Get(context.TODO(), types.NamespacedName{Name: instance.Spec.DeploymentName, Namespace: instance.Namespace}, oldDeployment); err != nil && !errors.IsNotFound(err) {
 		reqLogger.Error(err, "Error getting deployment")
 		return reconcile.Result{}, err
 	} else if err == nil {
 		if config.ConfigMapsDiffer(config.NewImagePullerConfigMap(instance), foundConfigMap) || GetDeploymentConfigMapName(oldDeployment) != foundConfigMap.Name {
 			if GetDeploymentConfigMapName(oldDeployment) == foundConfigMap.Name {
-				// Names are the same, delete pods and let the new pods pick up the new configmap
+				// ConfigMap names are the same, delete pods and let the new pods pick up the new configmap
 
 				pods := &corev1.PodList{}
 				if err = r.client.List(context.TODO(), pods, client.MatchingLabels{"app": "kubernetes-image-puller"}); err != nil {
@@ -202,7 +212,7 @@ func (r *ReconcileKubernetesImagePuller) Reconcile(request reconcile.Request) (r
 						}
 					}
 				}
-				// Names are different, just run an update
+				// ConfigMap names are different, just run an update
 			} else {
 				err = r.client.Update(context.TODO(), NewImagePullerDeployment(instance))
 				if err != nil {
@@ -221,8 +231,6 @@ func (r *ReconcileKubernetesImagePuller) Reconcile(request reconcile.Request) (r
 			return reconcile.Result{}, err
 		}
 
-		// if there is a deployment, and the name has not changed, delete the pod
-		// if the configmap name has changed, update the deployment
 		return reconcile.Result{Requeue: true}, nil
 	}
 
@@ -274,6 +282,27 @@ func (r *ReconcileKubernetesImagePuller) Reconcile(request reconcile.Request) (r
 	} else if err != nil {
 		reqLogger.Error(err, "Could not get deployment")
 		return reconcile.Result{}, err
+	}
+
+	// If DeploymentName has changed, delete the old deployment and create a new one
+	deployments := &appsv1.DeploymentList{}
+	err = r.client.List(context.TODO(), deployments, client.MatchingLabels{"app": "kubernetes-image-puller"})
+	if err != nil {
+		reqLogger.Error(err, "Error listing deployments")
+		return reconcile.Result{}, err
+	}
+	// If more than one deployment found in list, delete all deployments not named instance.Spec.DeploymentName
+	if len(deployments.Items) > 1 {
+		for _, deployment := range deployments.Items {
+			if deployment.Name != instance.Spec.DeploymentName {
+				reqLogger.Info("Deleting old deployment", "Deployment.Name", deployment.Name)
+				err = r.client.Delete(context.TODO(), &deployment)
+				if err != nil {
+					reqLogger.Error(err, "Could not delete deployment")
+					return reconcile.Result{}, err
+				}
+			}
+		}
 	}
 
 	// Everything already exists
