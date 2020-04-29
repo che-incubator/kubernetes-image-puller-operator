@@ -624,9 +624,22 @@ func TestDeletesOldDeploymentOnNameChange(t *testing.T) {
 		newCr *chev1alpha1.KubernetesImagePuller
 	}
 
-	for _, tc := range []testcase{} {
+	for _, tc := range []testcase{{
+		name:  "change the deployment name",
+		oldCr: defaultImagePullerWithConfigMapAndDeploymentName(),
+		newCr: &chev1alpha1.KubernetesImagePuller{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: namespace,
+				Name:      "test-puller",
+			},
+			Spec: chev1alpha1.KubernetesImagePullerSpec{
+				ConfigMapName:  "k8s-image-puller",
+				DeploymentName: "new-kubernetes-image-puller",
+			},
+		},
+	}} {
 		t.Run(tc.name, func(t *testing.T) {
-			c := setupClient(t, tc.newCr, NewImagePullerDeployment(tc.newCr), createDaemonsetRole, createDaemonsetRole, defaultServiceAccount, expectedConfigMap(tc.newCr))
+			c := setupClient(t, tc.newCr, NewImagePullerDeployment(tc.newCr), createDaemonsetRole, createDaemonsetRoleBinding, defaultServiceAccount, expectedConfigMap(tc.newCr))
 			r := &ReconcileKubernetesImagePuller{
 				client: c,
 				scheme: scheme.Scheme,
@@ -640,8 +653,12 @@ func TestDeletesOldDeploymentOnNameChange(t *testing.T) {
 			if err != nil {
 				t.Errorf("Error listing deployments: %v", err)
 			}
-			if len(deployments.Items) > 1 {
+			if len(deployments.Items) != 1 {
 				t.Errorf("Expected 1 deployment but got %v", len(deployments.Items))
+			}
+
+			if deployments.Items[0].Name != tc.newCr.Spec.DeploymentName {
+				t.Errorf("Expected a deployment named %v but got %v", tc.newCr.Spec.DeploymentName, deployments.Items[0].Name)
 			}
 		})
 	}
