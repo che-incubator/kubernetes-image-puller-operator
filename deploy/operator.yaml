@@ -16,7 +16,7 @@ spec:
       containers:
         - name: kubernetes-image-puller-operator
           # Replace this with the built image name
-          image: REPLACE_IMAGE
+          image: quay.io/tgeorge/kubernetes-image-puller-operator:dev
           command:
           - kubernetes-image-puller-operator
           imagePullPolicy: Always
