@@ -63,7 +63,7 @@ function tag_and_push_ci() {
   docker tag ${LOCAL_IMAGE_NAME}  "${REGISTRY}/${ORGANIZATION}/${IMAGE}:latest"
   docker push "${REGISTRY}/${ORGANIZATION}/${IMAGE}:latest"
   docker tag ${LOCAL_IMAGE_NAME} "${REGISTRY}/${ORGANIZATION}/${IMAGE}:${OPERATOR_VERSION_TAG}"
-  docker tag "${REGISTRY}/${ORGANIZATION}/${IMAGE}:${OPERATOR_VERSION_TAG}"
+  docker push "${REGISTRY}/${ORGANIZATION}/${IMAGE}:${OPERATOR_VERSION_TAG}"
 }
 
 function tag_and_push_nightly() {
