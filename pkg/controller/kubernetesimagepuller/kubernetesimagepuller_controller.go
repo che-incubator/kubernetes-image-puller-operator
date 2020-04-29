@@ -261,16 +261,18 @@ func (r *ReconcileKubernetesImagePuller) Reconcile(request reconcile.Request) (r
 
 	// Check if kubernetes image puller deployment exists, and create it if it does not.
 	foundDeployment := &appsv1.Deployment{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: "kubernetes-image-puller", Namespace: instance.Namespace}, foundDeployment)
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: instance.Spec.DeploymentName, Namespace: instance.Namespace}, foundDeployment)
 	if err != nil && errors.IsNotFound(err) {
 		reqLogger.Info("Creating kubernetes image puller deployment", "Deployment.Namespace", instance.Namespace)
 		err = r.client.Create(context.TODO(), NewImagePullerDeployment(instance))
 		if err != nil {
+			reqLogger.Error(err, "Could not create deployment")
 			return reconcile.Result{}, err
 		}
 
 		return reconcile.Result{}, nil
 	} else if err != nil {
+		reqLogger.Error(err, "Could not get deployment")
 		return reconcile.Result{}, err
 	}
 
