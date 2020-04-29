@@ -57,6 +57,7 @@ function tag_and_push_ci() {
   LOCAL_IMAGE_NAME="kubernetes-image-puller-operator"
 
   set_git_commit_tag
+  set_operator_version_tag
   docker tag ${LOCAL_IMAGE_NAME}  "${REGISTRY}/${ORGANIZATION}/${IMAGE}:${GIT_COMMIT_TAG}"
   docker push "${REGISTRY}/${ORGANIZATION}/${IMAGE}:${GIT_COMMIT_TAG}"
   docker tag ${LOCAL_IMAGE_NAME}  "${REGISTRY}/${ORGANIZATION}/${IMAGE}:latest"
