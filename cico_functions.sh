@@ -44,6 +44,11 @@ function set_git_commit_tag() {
   GIT_COMMIT_TAG=$(echo "$GIT_COMMIT" | cut -c1-"${DEVSHIFT_TAG_LEN}")
   export GIT_COMMIT_TAG
 }
+
+function set_operator_version_tag() {
+  OPERATOR_VERSION_TAG=$(grep "Version =" version/version.go | cut -d = -f 2 | sed 's/\"//g' | sed 's/^ //' )
+  export OPERATOR_VERSION_TAG
+}
 # Simplify tagging and pushing
 function tag_and_push_ci() {
   REGISTRY="quay.io"
@@ -56,6 +61,8 @@ function tag_and_push_ci() {
   docker push "${REGISTRY}/${ORGANIZATION}/${IMAGE}:${GIT_COMMIT_TAG}"
   docker tag ${LOCAL_IMAGE_NAME}  "${REGISTRY}/${ORGANIZATION}/${IMAGE}:latest"
   docker push "${REGISTRY}/${ORGANIZATION}/${IMAGE}:latest"
+  docker tag ${LOCAL_IMAGE_NAME} "${REGISTRY}/${ORGANIZATION}/${IMAGE}:${OPERATOR_VERSION_TAG}"
+  docker tag "${REGISTRY}/${ORGANIZATION}/${IMAGE}:${OPERATOR_VERSION_TAG}"
 }
 
 function tag_and_push_nightly() {
