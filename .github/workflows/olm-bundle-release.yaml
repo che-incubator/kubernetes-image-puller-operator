@@ -3,11 +3,11 @@ name: Make new OLM bundle
 on:
   pull_request:
     branches:
-      - olm-v*
+      - master
 
 jobs:
   operator-courier:
-    if: github.evnt.pull_request.merged
+    if: github.evnt.pull_request.merged && starts_with(github.head_ref, 'olm-v')
     runs-on: ubuntu-latest
     name: Validate the OLM bundle
     steps:
