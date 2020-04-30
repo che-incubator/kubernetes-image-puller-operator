@@ -1,0 +1,30 @@
+name: Make new OLM bundle
+
+on:
+  pull_request:
+    branches:
+      - olm-v*
+
+jobs:
+  operator-courier:
+    if: github.evnt.pull_request.merged
+    runs-on: ubuntu-latest
+    name: Validate the OLM bundle
+    steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v2
+      with:
+        go-version: ^1.13
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: Validate the OLM bundle
+      run: echo 'operator-courier validate'
+
+    - name: Get version string
+      run: echo 'get version string'
+    
+    - name: Push operator bundle to quay
+      run: echo 'push operator-courier bundle to quay'
