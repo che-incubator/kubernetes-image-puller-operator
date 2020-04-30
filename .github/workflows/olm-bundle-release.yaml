@@ -7,7 +7,7 @@ on:
 
 jobs:
   operator-courier:
-    if: github.evnt.pull_request.merged && starts_with(github.head_ref, 'olm-v')
+    if: github.event.pull_request.merged && startsWith(github.head_ref, 'olm-v')
     runs-on: ubuntu-latest
     name: Validate the OLM bundle
     steps:
