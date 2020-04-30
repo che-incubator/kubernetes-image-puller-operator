@@ -35,7 +35,7 @@ jobs:
     - name: Validate the operator bundle
       run: operator-courier verify --ui_validate_io ${OPERATOR_DIR}
       env:
-        OPERATOR_DIR: deploy/olm-catalog/kubernetes-image-puller-operator
+        OPERATOR_DIR: deploy/olm-catalog/kubernetes-imagepuller-operator
 
     - name: Get version string
       run: |
@@ -64,6 +64,6 @@ jobs:
         PASSWORD: ${{ secrets.ROBOT_QUAY_PASSWORD }}
         REGISTRY_NAMESPACE: eclipse
         PACKAGE_NAME: kubernetes-image-puller-operator
-        OPERATOR_DIR: deploy/olm-catalog/kubernetes-image-puller-operator
+        OPERATOR_DIR: deploy/olm-catalog/kubernetes-imagepuller-operator
 
 
