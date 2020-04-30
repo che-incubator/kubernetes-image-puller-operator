@@ -22,11 +22,48 @@ jobs:
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2
 
-    - name: Validate the OLM bundle
-      run: echo 'operator-courier validate'
+    - name: Set up python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+
+    - name: Install operator-courier
+      run: |
+        pip3 install operator-courier --user
+        echo "::add-path::$HOME/.local/bin"
+
+    - name: Validate the operator bundle
+      run: operator-courier verify --ui_validate_io ${OPERATOR_DIR}
+      env:
+        OPERATOR_DIR: deploy/olm-catalog/kubernetes-image-puller-operator
 
     - name: Get version string
-      run: echo 'get version string'
+      run: |
+        OPERATOR_VERSION_TAG=$(grep "Version =" version/version.go | cut -d = -f 2 | sed 's/\"//g' | sed 's/^ //' )
+        HEAD_REF_VERSION=$(echo "${{ github.head_ref }}" | cut -c ${HEAD_REF_VERSION_RANGE})
+        if [[ ${OPERATOR_VERSION_TAG} != ${HEAD_REF_VERSION} ]]; then
+          echo "version/version.go version and git branch version do not match.  Stopping."
+          exit 1
+        fi
+        echo "::set-env name=PACKAGE_VERSION::${OPERATOR_VERSION_TAG}"
+      env:
+        HEAD_REF_VERSION_RANGE: '6-'
     
     - name: Push operator bundle to quay
-      run: echo 'push operator-courier bundle to quay'
+      run: |
+        QUAY_TOKEN=$(curl -H "Content-Type: application/json" -XPOST https://quay.io/cnr/api/v1/users/login -d '
+        {
+          "user": {
+            "username": "'"${USERNAME}"'",
+            "password": "'"${PASSWORD}"'"
+          }
+        }' | cut -d : -f2 | sed 's/}//' | sed 's/\"//g')
+        operator-courier push "${OPERATOR_DIR}" "${REGISTRY_NAMESPACE}" "${PACKAGE_NAME}" "${PACKAGE_VERSION}" "${QUAY_TOKEN}"
+      env:
+        USERNAME: ${{ secrets.ROBOT_QUAY_USERNAME }}
+        PASSWORD: ${{ secrets.ROBOT_QUAY_PASSWORD }}
+        REGISTRY_NAMESPACE: eclipse
+        PACKAGE_NAME: kubernetes-image-puller-operator
+        OPERATOR_DIR: deploy/olm-catalog/kubernetes-image-puller-operator
+
+
