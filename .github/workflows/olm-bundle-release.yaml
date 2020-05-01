@@ -63,7 +63,7 @@ jobs:
         USERNAME: ${{ secrets.ROBOT_QUAY_USERNAME }}
         PASSWORD: ${{ secrets.ROBOT_QUAY_PASSWORD }}
         REGISTRY_NAMESPACE: eclipse
-        PACKAGE_NAME: kubernetes-image-puller-operator
+        PACKAGE_NAME: kubernetes-imagepuller-operator
         OPERATOR_DIR: deploy/olm-catalog/kubernetes-imagepuller-operator
 
 
