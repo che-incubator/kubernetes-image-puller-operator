@@ -14,7 +14,7 @@ metadata:
           },
           "spec": {
             "daemonsetName": "k8s-image-puller",
-            "images": "java11-maven=quay.io/eclipse/che-java11-maven:nightly;che-theia=eclipse/che-theia:next"
+            "images": "java11-maven=quay.io/eclipse/che-java11-maven:nightly;che-theia=quay.io/eclipse/che-theia:next"
           }
         }
       ]
@@ -22,10 +22,10 @@ metadata:
     certified: 'false'
     createdAt: ''
     description: Create and manage kubernetes-image-puller instances.
-    containerImage: ''
+    containerImage: 'quay.io/eclipse/kubernetes-image-puller-operator:0.0.1'
     support: ''
-    capabilities: Seamless Upgrades
-    repository: ''
+    capabilities: Full Lifecycle
+    repository: 'https://github.com/che-incubator/kubernetes-image-puller-operator'
 spec:
   displayName: Kubernetes Image Puller Operator
   description: "## About the managed application\n\nCreate a `KubernetesImagePuller` custom resource to automatically configure and run an instance of the [kubernetes-image-puller.](https://github.com/che-incubator/kubernetes-image-puller)\n## About this Operator\n\nThe `KubernetesImagePuller` custom resource understands the following fields in the `spec`:\n\n1. `configMapName` - The name of the `ConfigMap` to create\t\n2. `daemonsetName` - The name of the `DaemonSet` to be create.\n3. `deploymentName` - The name of the `kubernetes-image-puller` `Deployment` to create.\n4. `images` - A list of key-value pairs separated by semicolons of images to pull.  For example: `java=quay.io/eclipse/che-java8-maven:latest;theia=quay.io/eclipse/che-theia:next`\n5. `cachingIntervalHours` - The amount of time, in hours, between `DaemonSet` health checks.\n6. `cachingMemoryRequest` - The memory request for each cached image when the puller is running.\n7. `cachingMemoryLimit` - The memory limit for each cached image when the puller is running.\n8. `nodeSelector` - Node selector applied to pods created by the `DaemonSet`.\n## Prerequisites for enabling this Operator\n\nThe operator requires an existing namespace to be installed in.\n"
