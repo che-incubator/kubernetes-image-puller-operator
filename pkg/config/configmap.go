@@ -40,6 +40,8 @@ func DefaultImagePullerConfigMap(namespace string, name string) *corev1.ConfigMa
 			"CACHING_INTERVAL_HOURS": "1",
 			"CACHING_MEMORY_REQUEST": "10Mi",
 			"CACHING_MEMORY_LIMIT":   "20Mi",
+			"CACHING_CPU_REQUEST":    ".05",
+			"CACHING_CPU_LIMIT":      ".2",
 			"NODE_SELECTOR":          "{}",
 			"NAMESPACE":              namespace,
 		},
@@ -65,6 +67,12 @@ func mergeConfigMapWithCR(instance *chev1alpha1.KubernetesImagePuller, defaultCo
 	}
 	if instance.Spec.CachingMemoryLimit != "" {
 		defaultConfigMap.Data["CACHING_MEMORY_LIMIT"] = instance.Spec.CachingMemoryLimit
+	}
+	if instance.Spec.CachingCpuRequest != "" {
+		defaultConfigMap.Data["CACHING_CPU_REQUEST"] = instance.Spec.CachingCpuRequest
+	}
+	if instance.Spec.CachingCpuLimit != "" {
+		defaultConfigMap.Data["CACHING_CPU_LIMIT"] = instance.Spec.CachingCpuLimit
 	}
 	if instance.Spec.NodeSelector != "" {
 		defaultConfigMap.Data["NODE_SELECTOR"] = instance.Spec.NodeSelector
