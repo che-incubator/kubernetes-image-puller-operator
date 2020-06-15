@@ -17,15 +17,13 @@ type KubernetesImagePullerSpec struct {
 	CachingIntervalHours string `json:"cachingIntervalHours,omitempty"`
 	CachingMemoryRequest string `json:"cachingMemoryRequest,omitempty"`
 	CachingMemoryLimit   string `json:"cachingMemoryLimit,omitempty"`
-	CachingCpuRequest    string `json:"cachingCpuRequest,omitempty"`
-	CachingCpuLimit      string `json:"cachingCpuLimit,omitempty"`
+	CachingCpuRequest    string `json:"cachingCPURequest,omitempty"`
+	CachingCpuLimit      string `json:"cachingCPULimit,omitempty"`
 	NodeSelector         string `json:"nodeSelector,omitempty"`
 }
 
 // KubernetesImagePullerStatus defines the observed state of KubernetesImagePuller
 type KubernetesImagePullerStatus struct {
-	ConfigMapName  string
-	DeploymentName string
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
