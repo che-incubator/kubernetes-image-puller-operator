@@ -17,6 +17,8 @@ type KubernetesImagePullerSpec struct {
 	CachingIntervalHours string `json:"cachingIntervalHours,omitempty"`
 	CachingMemoryRequest string `json:"cachingMemoryRequest,omitempty"`
 	CachingMemoryLimit   string `json:"cachingMemoryLimit,omitempty"`
+	CachingCpuRequest    string `json:"cachingCpuRequest,omitempty"`
+	CachingCpuLimit      string `json:"cachingCpuLimit,omitempty"`
 	NodeSelector         string `json:"nodeSelector,omitempty"`
 }
 
