@@ -29,6 +29,9 @@ spec:
 
 ### Installing The Operator
 
+#### Installing on OperatorHub
+
+#### Installing Manually
 ``` shell
 kubectl apply -f deploy/
 kubectl apply -f deploy/crds/
