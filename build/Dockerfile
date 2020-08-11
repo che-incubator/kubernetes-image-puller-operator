@@ -1,12 +1,30 @@
-FROM golang:1.13.8 AS build
+# Copyright (c) 2020 Red Hat, Inc.
+# This program and the accompanying materials are made
+# available under the terms of the Eclipse Public License 2.0
+# which is available at https://www.eclipse.org/legal/epl-2.0/
+#
+# SPDX-License-Identifier: EPL-2.0
+#
+# Contributors:
+#   Red Hat, Inc. - initial API and implementation
+#
 
+# NOTE: using registry.access.redhat.com/rhel8/go-toolset does not work (user is requested to use registry.redhat.io)
+# NOTE: using registry.redhat.io/rhel8/go-toolset requires login, which complicates automation
+# NOTE: since updateBaseImages.sh does not support other registries than RHCC, update to RHEL8
+# https://access.redhat.com/containers/?tab=tags#/registry.access.redhat.com/devtools/go-toolset-rhel7
+FROM registry.access.redhat.com/devtools/go-toolset-rhel7:1.13.4-18 AS build
+ENV PATH=/opt/rh/go-toolset-1.13/root/usr/bin:${PATH} \
+    GOPATH=/go/
+
+USER root
 ADD . /go/src/github.com/che-incubator/kubernetes-image-puller-operator
 WORKDIR /go/src/github.com/che-incubator/kubernetes-image-puller-operator
 RUN go test -v ./pkg... ./cmd... 
 RUN go build -o build/_output/bin/kubernetes-image-puller-operator cmd/manager/main.go
 
-
-FROM registry.access.redhat.com/ubi8/ubi-minimal:latest
+# https://access.redhat.com/containers/?tab=tags#/registry.access.redhat.com/ubi8-minimal
+FROM registry.access.redhat.com/ubi8-minimal:8.2-345
 
 ENV OPERATOR=/usr/local/bin/kubernetes-image-puller-operator \
     USER_UID=1001 \
