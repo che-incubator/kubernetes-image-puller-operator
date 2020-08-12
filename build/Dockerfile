@@ -12,8 +12,8 @@
 # NOTE: using registry.access.redhat.com/rhel8/go-toolset does not work (user is requested to use registry.redhat.io)
 # NOTE: using registry.redhat.io/rhel8/go-toolset requires login, which complicates automation
 # NOTE: since updateBaseImages.sh does not support other registries than RHCC, update to RHEL8
-# https://access.redhat.com/containers/?tab=tags#/registry.access.redhat.com/devtools/go-toolset-rhel7
-FROM registry.access.redhat.com/devtools/go-toolset-rhel7:1.13.4-18 AS build
+# https://catalog.redhat.com/software/containers/ubi8/go-toolset/5ce8713aac3db925c03774d1
+FROM registry.access.redhat.com/ubi8/go-toolset:1.13.4-32 AS build
 ENV PATH=/opt/rh/go-toolset-1.13/root/usr/bin:${PATH} \
     GOPATH=/go/
 
@@ -39,3 +39,5 @@ RUN  /usr/local/bin/user_setup
 ENTRYPOINT ["/usr/local/bin/entrypoint"]
 
 USER ${USER_UID}
+
+# append Brew metadata here
