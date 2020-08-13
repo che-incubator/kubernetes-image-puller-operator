@@ -1,3 +1,7 @@
+[![master](https://ci.centos.org/buildStatus/icon?subject=master&job=devtools-che-incubator-kubernetes-image-puller-operator-build-master/)](https://ci.centos.org/job/devtools-che-incubator-kubernetes-image-puller-operator-build-master/)
+[![nightly](https://ci.centos.org/buildStatus/icon?subject=nightly&job=devtools-kubernetes-image-puller-operator-nightly)](https://ci.centos.org/job/devtools-kubernetes-image-puller-operator-nightly/)
+
+
 # Kubernetes Image Puller Operator
 
 [![Contribute](https://che.openshift.io/factory/resources/factory-contribute.svg)](https://che.openshift.io/f?url=https://github.com/che-incubator/kubernetes-image-puller-operator)
