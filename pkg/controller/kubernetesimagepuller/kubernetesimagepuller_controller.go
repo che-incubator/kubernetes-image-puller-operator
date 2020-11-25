@@ -143,7 +143,7 @@ func (r *ReconcileKubernetesImagePuller) Reconcile(request reconcile.Request) (r
 	foundRole := &rbacv1.Role{}
 	err = r.client.Get(context.TODO(), types.NamespacedName{Namespace: instance.Namespace, Name: "create-daemonset"}, foundRole)
 	if err != nil && errors.IsNotFound(err) {
-		reqLogger.Info("Creating create-daemonset role")
+		reqLogger.Info("Creating create-daemonset role", "role", rbac.NewRole(instance).Rules)
 		if err = r.client.Create(context.TODO(), rbac.NewRole(instance)); err != nil {
 			reqLogger.Error(err, "Error creating create-daemonset role")
 			return reconcile.Result{}, err
@@ -343,6 +343,10 @@ func NewImagePullerDeployment(cr *chev1alpha1.KubernetesImagePuller) *appsv1.Dep
 						{
 							Name:  "kubernetes-image-puller",
 							Image: "quay.io/eclipse/kubernetes-image-puller:latest",
+							Env: []corev1.EnvVar{{
+								Name:  "DEPLOYMENT_NAME",
+								Value: deploymentName,
+							}},
 							EnvFrom: []corev1.EnvFromSource{{
 								ConfigMapRef: &corev1.ConfigMapEnvSource{
 									LocalObjectReference: corev1.LocalObjectReference{
