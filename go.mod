@@ -3,14 +3,20 @@ module github.com/che-incubator/kubernetes-image-puller-operator
 go 1.13
 
 require (
+	cloud.google.com/go v0.47.0 // indirect
+	github.com/Azure/go-autorest/autorest v0.9.3 // indirect
+	github.com/Azure/go-autorest/autorest/adal v0.8.1 // indirect
 	github.com/google/go-cmp v0.4.0
+	github.com/json-iterator/go v1.1.8 // indirect
 	github.com/operator-framework/operator-sdk v0.15.2
 	github.com/spf13/pflag v1.0.5
-	github.com/tektoncd/pipeline v0.10.1 // indirect
+	golang.org/x/net v0.0.0-20191119073136-fc4aabc6c914 // indirect
+	golang.org/x/sys v0.0.0-20191210023423-ac6580df4449 // indirect
+	gopkg.in/yaml.v2 v2.2.5 // indirect
 	k8s.io/api v0.17.0
 	k8s.io/apimachinery v0.17.1
 	k8s.io/client-go v12.0.0+incompatible
-	knative.dev/pkg v0.0.0-20200306005226-fc857aa77f79 // indirect
+	k8s.io/kube-openapi v0.0.0-20191107075043-30be4d16710a // indirect
 	sigs.k8s.io/controller-runtime v0.4.0
 )
 

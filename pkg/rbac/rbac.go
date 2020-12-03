@@ -22,8 +22,8 @@ func NewRole(cr *chev1alpha1.KubernetesImagePuller) *rbacv1.Role {
 		},
 		Rules: []rbacv1.PolicyRule{{
 			APIGroups: []string{"apps"},
-			Resources: []string{"daemonsets"},
-			Verbs:     []string{"create", "delete", "watch", "get"},
+			Resources: []string{"daemonsets", "deployments"},
+			Verbs:     []string{"create", "delete", "list", "watch", "get"},
 		}},
 	}
 }
