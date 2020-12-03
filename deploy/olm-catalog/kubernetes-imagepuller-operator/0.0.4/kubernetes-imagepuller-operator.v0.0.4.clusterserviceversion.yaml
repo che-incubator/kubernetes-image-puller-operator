@@ -24,7 +24,7 @@ metadata:
     description: Create and manage kubernetes-image-puller instances.
     containerImage: 'quay.io/eclipse/kubernetes-image-puller-operator:0.0.4'
     support: ''
-    capabilities: Full Lifecycle
+    capabilities: Seamless Upgrades
     repository: 'https://github.com/che-incubator/kubernetes-image-puller-operator'
 spec:
   displayName: Kubernetes Image Puller Operator
