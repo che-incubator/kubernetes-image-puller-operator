@@ -42,6 +42,8 @@ spec:
               type: string
             cachingMemoryRequest:
               type: string
+            cheFlavor:
+              type: string
             configMapName:
               type: string
             daemonsetName:

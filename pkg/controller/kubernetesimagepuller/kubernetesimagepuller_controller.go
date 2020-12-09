@@ -2,6 +2,7 @@ package kubernetesimagepuller
 
 import (
 	"context"
+	"reflect"
 
 	chev1alpha1 "github.com/che-incubator/kubernetes-image-puller-operator/pkg/apis/che/v1alpha1"
 	"github.com/che-incubator/kubernetes-image-puller-operator/pkg/config"
@@ -21,6 +22,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+)
+
+const (
+	LatestUpstreamImageTag               = "latest"
+	LatestDownstreamImageTag             = "2.5-5"
+	UpstreamKubernetesImagePullerImage   = "quay.io/eclipse/kubernetes-image-puller:" + LatestUpstreamImageTag
+	DownstreamKubernetesImagePullerImage = "registry.redhat.io/codeready-workspaces/imagepuller-rhel8:" + LatestDownstreamImageTag
 )
 
 var log = logf.Log.WithName("controller_kubernetesimagepuller")
@@ -117,6 +125,16 @@ func (r *ReconcileKubernetesImagePuller) Reconcile(request reconcile.Request) (r
 		}
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
+	}
+
+	// If che flavor is not set, set to che
+	if instance.Spec.CheFlavor == "" {
+		instance.Spec.CheFlavor = "che"
+		if err = r.client.Update(context.TODO(), instance, &client.UpdateOptions{}); err != nil {
+			reqLogger.Error(err, "Error updating KubernetesImagePuller")
+			return reconcile.Result{}, err
+		}
+		return reconcile.Result{}, nil
 	}
 
 	// If there is no set configmap name, update with the default configmap name
@@ -305,12 +323,30 @@ func (r *ReconcileKubernetesImagePuller) Reconcile(request reconcile.Request) (r
 		}
 	}
 
+	// if expected deployment and found deployment Specs differ, update it
+	if !reflect.DeepEqual(foundDeployment.Spec, NewImagePullerDeployment(instance).Spec) {
+		deployment := NewImagePullerDeployment(instance)
+		err := r.client.Update(context.TODO(), deployment, &client.UpdateOptions{})
+		if err != nil {
+			reqLogger.Error(err, "Error updating deployment: %v")
+			return reconcile.Result{}, err
+		}
+		return reconcile.Result{}, nil
+	}
+
 	// Everything already exists
 	reqLogger.Info("End Reconcile")
 	return reconcile.Result{}, nil
 }
 
 func NewImagePullerDeployment(cr *chev1alpha1.KubernetesImagePuller) *appsv1.Deployment {
+	var imageName string
+	if cr.Spec.CheFlavor == "che" {
+		imageName = UpstreamKubernetesImagePullerImage
+	} else if cr.Spec.CheFlavor == "codeready" {
+		imageName = DownstreamKubernetesImagePullerImage
+	}
+
 	replicas := int32(1)
 	var deploymentName string
 	if cr.Spec.DeploymentName == "" {
@@ -342,7 +378,7 @@ func NewImagePullerDeployment(cr *chev1alpha1.KubernetesImagePuller) *appsv1.Dep
 					Containers: []corev1.Container{
 						{
 							Name:  "kubernetes-image-puller",
-							Image: "quay.io/eclipse/kubernetes-image-puller:latest",
+							Image: imageName,
 							Env: []corev1.EnvVar{{
 								Name:  "DEPLOYMENT_NAME",
 								Value: deploymentName,

@@ -100,7 +100,7 @@ func defaultImagePuller() *chev1alpha1.KubernetesImagePuller {
 	}
 }
 
-func defaultImagePullerWithConfigMapName() *chev1alpha1.KubernetesImagePuller {
+func defaultImagePullerWithCodereadyCheFlavor() *chev1alpha1.KubernetesImagePuller {
 	return &chev1alpha1.KubernetesImagePuller{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "KubernetesImagePuller",
@@ -112,7 +112,45 @@ func defaultImagePullerWithConfigMapName() *chev1alpha1.KubernetesImagePuller {
 			ResourceVersion: "1",
 		},
 		Spec: chev1alpha1.KubernetesImagePullerSpec{
+			CheFlavor:      "codeready",
+			ConfigMapName:  "k8s-image-puller",
+			DeploymentName: "kubernetes-image-puller",
+		},
+	}
+}
+
+func defaultImagePullerWithCheFlavor() *chev1alpha1.KubernetesImagePuller {
+	return &chev1alpha1.KubernetesImagePuller{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "KubernetesImagePuller",
+			APIVersion: chev1alpha1.SchemeGroupVersion.String(),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            "test-puller",
+			Namespace:       namespace,
+			ResourceVersion: "1",
+		},
+		Spec: chev1alpha1.KubernetesImagePullerSpec{
+			CheFlavor: "che",
+		},
+	}
+
+}
+
+func defaultImagePullerWithConfigMapName() *chev1alpha1.KubernetesImagePuller {
+	return &chev1alpha1.KubernetesImagePuller{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "KubernetesImagePuller",
+			APIVersion: chev1alpha1.SchemeGroupVersion.String(),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            "test-puller",
+			Namespace:       namespace,
+			ResourceVersion: "2",
+		},
+		Spec: chev1alpha1.KubernetesImagePullerSpec{
 			ConfigMapName: "k8s-image-puller",
+			CheFlavor:     "che",
 		},
 	}
 }
@@ -126,11 +164,12 @@ func defaultImagePullerWithConfigMapAndDeploymentName() *chev1alpha1.KubernetesI
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            "test-puller",
 			Namespace:       namespace,
-			ResourceVersion: "2",
+			ResourceVersion: "3",
 		},
 		Spec: chev1alpha1.KubernetesImagePullerSpec{
 			ConfigMapName:  "k8s-image-puller",
 			DeploymentName: "kubernetes-image-puller",
+			CheFlavor:      "che",
 		},
 	}
 }
@@ -160,8 +199,32 @@ func setupClient(t *testing.T, objs ...runtime.Object) client.Client {
 	return client
 }
 
-func TestSetsConfigMapName(t *testing.T) {
+func TestSetsCheFlavor(t *testing.T) {
 	client := setupClient(t, defaultImagePuller())
+	got := &chev1alpha1.KubernetesImagePuller{}
+	want := defaultImagePullerWithCheFlavor()
+
+	r := &ReconcileKubernetesImagePuller{
+		client: client,
+		scheme: scheme.Scheme,
+	}
+
+	_, err := r.Reconcile(reconcile.Request{NamespacedName: key})
+	if err != nil {
+		t.Errorf("Got error in reconcile: %v", err)
+	}
+
+	if err := client.Get(context.TODO(), types.NamespacedName{Namespace: namespace, Name: "test-puller"}, got); err != nil {
+		t.Errorf("Error getting KubernetesImagePuller: %v", err)
+	}
+
+	if d := cmp.Diff(want, got); d != "" {
+		t.Errorf("Error (-want, +got): %s", d)
+	}
+}
+
+func TestSetsConfigMapName(t *testing.T) {
+	client := setupClient(t, defaultImagePullerWithCheFlavor())
 	got := &chev1alpha1.KubernetesImagePuller{}
 	want := defaultImagePullerWithConfigMapName()
 
@@ -320,24 +383,45 @@ func TestCreatesServiceAccount(t *testing.T) {
 }
 
 func TestCreatesDeployment(t *testing.T) {
-	client := setupClient(t, defaultImagePullerWithConfigMapAndDeploymentName(), expectedConfigMap(defaultImagePullerWithConfigMapAndDeploymentName()), createDaemonsetRole, createDaemonsetRoleBinding, defaultServiceAccount)
-	got := &appsv1.Deployment{}
-	want := expectedDeployment(defaultImagePullerWithConfigMapAndDeploymentName())
-	r := &ReconcileKubernetesImagePuller{
-		client: client,
-		scheme: scheme.Scheme,
+	type testcase struct {
+		name      string
+		cr        *chev1alpha1.KubernetesImagePuller
+		configMap *corev1.ConfigMap
+		want      *appsv1.Deployment
+		got       *appsv1.Deployment
 	}
 
-	_, err := r.Reconcile(reconcile.Request{NamespacedName: key})
-	if err != nil {
-		t.Errorf("Got error in reconcile: %v", err)
-	}
+	for _, tc := range []testcase{{
+		name:      "che che flavor",
+		cr:        defaultImagePullerWithConfigMapAndDeploymentName(),
+		configMap: expectedConfigMap(defaultImagePullerWithConfigMapAndDeploymentName()),
+		want:      expectedDeployment(defaultImagePullerWithConfigMapAndDeploymentName()),
+		got:       &appsv1.Deployment{},
+	}, {
+		name:      "codeready che flavor",
+		cr:        defaultImagePullerWithCodereadyCheFlavor(),
+		configMap: expectedConfigMap(defaultImagePullerWithCodereadyCheFlavor()),
+		want:      expectedDeployment(defaultImagePullerWithCodereadyCheFlavor()),
+		got:       &appsv1.Deployment{},
+	}} {
+		t.Run(tc.name, func(t *testing.T) {
+			client := setupClient(t, tc.cr, tc.configMap, createDaemonsetRole, createDaemonsetRoleBinding, defaultServiceAccount)
+			r := &ReconcileKubernetesImagePuller{
+				client: client,
+				scheme: scheme.Scheme,
+			}
+			_, err := r.Reconcile(reconcile.Request{NamespacedName: key})
+			if err != nil {
+				t.Errorf("Got error in reconcile: %v", err)
+			}
 
-	if err := client.Get(context.TODO(), types.NamespacedName{Namespace: namespace, Name: "kubernetes-image-puller"}, got); err != nil {
-		t.Errorf("Error getting deployment: %v", err)
-	}
-	if d := cmp.Diff(want, got); d != "" {
-		t.Errorf("Error (-want, +got): %s", d)
+			if err := client.Get(context.TODO(), types.NamespacedName{Namespace: namespace, Name: "kubernetes-image-puller"}, tc.got); err != nil {
+				t.Errorf("Error getting deployment: %v", err)
+			}
+			if d := cmp.Diff(tc.want, tc.got); d != "" {
+				t.Errorf("Error (-want, +got): %s", d)
+			}
+		})
 	}
 }
 
@@ -371,6 +455,7 @@ func TestCreatesConfigMap(t *testing.T) {
 					DaemonsetName:  "other-daemonset-name",
 					ConfigMapName:  "k8s-image-puller",
 					DeploymentName: "kubernetes-image-puller",
+					CheFlavor:      "che",
 				},
 			},
 			want: &corev1.ConfigMap{
@@ -415,6 +500,7 @@ func TestCreatesConfigMap(t *testing.T) {
 					DeploymentName: "kubernetes-image-puller",
 					DaemonsetName:  "other-daemonset-name",
 					Images:         "che-devfile-registry=quay.io/eclipse/che-devfile-registry:latest,woopra-backend=quay.io/openshiftio/che-workspace-telemetry-woopra-backend:latest",
+					CheFlavor:      "che",
 				},
 			},
 			want: &corev1.ConfigMap{
@@ -457,6 +543,7 @@ func TestCreatesConfigMap(t *testing.T) {
 				Spec: chev1alpha1.KubernetesImagePullerSpec{
 					ConfigMapName:  "my-configmap",
 					DeploymentName: "kubernetes-image-puller",
+					CheFlavor:      "che",
 				},
 			},
 			want: &corev1.ConfigMap{
@@ -533,6 +620,7 @@ func TestUpdatesConfigMap(t *testing.T) {
 				DaemonsetName:  "new-daemonset",
 				ConfigMapName:  "k8s-image-puller",
 				DeploymentName: "kubernetes-image-puller",
+				CheFlavor:      "che",
 			},
 		},
 		old: expectedConfigMap(defaultImagePullerWithConfigMapAndDeploymentName()),
@@ -572,6 +660,7 @@ func TestUpdatesConfigMap(t *testing.T) {
 			Spec: chev1alpha1.KubernetesImagePullerSpec{
 				ConfigMapName:  "new-configmap",
 				DeploymentName: "kubernetes-image-puller",
+				CheFlavor:      "che",
 			},
 		},
 		want: &corev1.ConfigMap{
@@ -645,6 +734,7 @@ func TestDeletesOldDeploymentOnNameChange(t *testing.T) {
 			Spec: chev1alpha1.KubernetesImagePullerSpec{
 				ConfigMapName:  "k8s-image-puller",
 				DeploymentName: "new-kubernetes-image-puller",
+				CheFlavor:      "che",
 			},
 		},
 	}} {
