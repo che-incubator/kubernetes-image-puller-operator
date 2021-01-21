@@ -38,6 +38,8 @@ spec:
     - che
     - kubernetes-image-puller
   maintainers:
+    - email: ibuziuk@redhat.com
+      name: Ilya Buziuk
     - email: tgeorge@redhat.com
       name: Tom George
   provider:
