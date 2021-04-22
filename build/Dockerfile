@@ -24,7 +24,7 @@ RUN go test -v ./pkg... ./cmd...
 RUN go build -o build/_output/bin/kubernetes-image-puller-operator cmd/manager/main.go
 
 # https://access.redhat.com/containers/?tab=tags#/registry.access.redhat.com/ubi8-minimal
-FROM registry.access.redhat.com/ubi8-minimal:8.2-345
+FROM registry.access.redhat.com/ubi8-minimal:8.3-298.1618432845
 
 ENV OPERATOR=/usr/local/bin/kubernetes-image-puller-operator \
     USER_UID=1001 \
