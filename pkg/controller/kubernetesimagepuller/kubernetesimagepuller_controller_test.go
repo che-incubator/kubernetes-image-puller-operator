@@ -383,6 +383,7 @@ func TestCreatesConfigMap(t *testing.T) {
 					"DAEMONSET_NAME":         "other-daemonset-name",
 					"IMAGES":                 "java11-maven=quay.io/eclipse/che-java11-maven:nightly;che-theia=quay.io/eclipse/che-theia:next;java-plugin-runner=eclipse/che-remote-plugin-runner-java8:latest",
 					"NODE_SELECTOR":          "{}",
+					"IMAGE_PULL_SECRETS":     "",
 					"NAMESPACE":              "test",
 				},
 				ObjectMeta: metav1.ObjectMeta{
@@ -427,6 +428,7 @@ func TestCreatesConfigMap(t *testing.T) {
 					"IMAGES":                 "che-devfile-registry=quay.io/eclipse/che-devfile-registry:latest,woopra-backend=quay.io/openshiftio/che-workspace-telemetry-woopra-backend:latest",
 					"DAEMONSET_NAME":         "other-daemonset-name",
 					"NODE_SELECTOR":          "{}",
+					"IMAGE_PULL_SECRETS":     "",
 					"NAMESPACE":              "test",
 				},
 				ObjectMeta: metav1.ObjectMeta{
@@ -469,6 +471,7 @@ func TestCreatesConfigMap(t *testing.T) {
 					"IMAGES":                 "java11-maven=quay.io/eclipse/che-java11-maven:nightly;che-theia=quay.io/eclipse/che-theia:next;java-plugin-runner=eclipse/che-remote-plugin-runner-java8:latest",
 					"DAEMONSET_NAME":         "kubernetes-image-puller",
 					"NODE_SELECTOR":          "{}",
+					"IMAGE_PULL_SECRETS":     "",
 					"NAMESPACE":              "test",
 				},
 				ObjectMeta: metav1.ObjectMeta{
@@ -557,6 +560,7 @@ func TestUpdatesConfigMap(t *testing.T) {
 				"DAEMONSET_NAME":         "new-daemonset",
 				"IMAGES":                 "java11-maven=quay.io/eclipse/che-java11-maven:nightly;che-theia=quay.io/eclipse/che-theia:next;java-plugin-runner=eclipse/che-remote-plugin-runner-java8:latest",
 				"NODE_SELECTOR":          "{}",
+				"IMAGE_PULL_SECRETS":     "",
 				"NAMESPACE":              "test",
 			},
 		},
@@ -595,6 +599,7 @@ func TestUpdatesConfigMap(t *testing.T) {
 				"DAEMONSET_NAME":         "kubernetes-image-puller",
 				"IMAGES":                 "java11-maven=quay.io/eclipse/che-java11-maven:nightly;che-theia=quay.io/eclipse/che-theia:next;java-plugin-runner=eclipse/che-remote-plugin-runner-java8:latest",
 				"NODE_SELECTOR":          "{}",
+				"IMAGE_PULL_SECRETS":     "",
 				"NAMESPACE":              "test",
 			},
 		},
