@@ -43,6 +43,7 @@ func DefaultImagePullerConfigMap(namespace string, name string) *corev1.ConfigMa
 			"CACHING_CPU_REQUEST":    ".05",
 			"CACHING_CPU_LIMIT":      ".2",
 			"NODE_SELECTOR":          "{}",
+			"IMAGE_PULL_SECRETS":     "",
 			"NAMESPACE":              namespace,
 		},
 	}
@@ -76,6 +77,9 @@ func mergeConfigMapWithCR(instance *chev1alpha1.KubernetesImagePuller, defaultCo
 	}
 	if instance.Spec.NodeSelector != "" {
 		defaultConfigMap.Data["NODE_SELECTOR"] = instance.Spec.NodeSelector
+	}
+	if instance.Spec.ImagePullSecrets != "" {
+		defaultConfigMap.Data["IMAGE_PULL_SECRETS"] = instance.Spec.ImagePullSecrets
 	}
 	if instance.Spec.DaemonsetName != "" {
 		defaultConfigMap.Data["DAEMONSET_NAME"] = instance.Spec.DaemonsetName

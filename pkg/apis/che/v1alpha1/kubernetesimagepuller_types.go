@@ -20,6 +20,7 @@ type KubernetesImagePullerSpec struct {
 	CachingCpuRequest    string `json:"cachingCPURequest,omitempty"`
 	CachingCpuLimit      string `json:"cachingCPULimit,omitempty"`
 	NodeSelector         string `json:"nodeSelector,omitempty"`
+	ImagePullSecrets     string `json:"imagePullSecrets,omitempty"`
 }
 
 // KubernetesImagePullerStatus defines the observed state of KubernetesImagePuller
