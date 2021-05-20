@@ -384,6 +384,7 @@ func TestCreatesConfigMap(t *testing.T) {
 					"IMAGES":                 "java11-maven=quay.io/eclipse/che-java11-maven:nightly;che-theia=quay.io/eclipse/che-theia:next;java-plugin-runner=eclipse/che-remote-plugin-runner-java8:latest",
 					"NODE_SELECTOR":          "{}",
 					"IMAGE_PULL_SECRETS":     "",
+					"AFFINITY":               "{}",
 					"NAMESPACE":              "test",
 				},
 				ObjectMeta: metav1.ObjectMeta{
@@ -429,6 +430,7 @@ func TestCreatesConfigMap(t *testing.T) {
 					"DAEMONSET_NAME":         "other-daemonset-name",
 					"NODE_SELECTOR":          "{}",
 					"IMAGE_PULL_SECRETS":     "",
+					"AFFINITY":               "{}",
 					"NAMESPACE":              "test",
 				},
 				ObjectMeta: metav1.ObjectMeta{
@@ -472,6 +474,7 @@ func TestCreatesConfigMap(t *testing.T) {
 					"DAEMONSET_NAME":         "kubernetes-image-puller",
 					"NODE_SELECTOR":          "{}",
 					"IMAGE_PULL_SECRETS":     "",
+					"AFFINITY":               "{}",
 					"NAMESPACE":              "test",
 				},
 				ObjectMeta: metav1.ObjectMeta{
@@ -561,6 +564,7 @@ func TestUpdatesConfigMap(t *testing.T) {
 				"IMAGES":                 "java11-maven=quay.io/eclipse/che-java11-maven:nightly;che-theia=quay.io/eclipse/che-theia:next;java-plugin-runner=eclipse/che-remote-plugin-runner-java8:latest",
 				"NODE_SELECTOR":          "{}",
 				"IMAGE_PULL_SECRETS":     "",
+				"AFFINITY":               "{}",
 				"NAMESPACE":              "test",
 			},
 		},
@@ -600,6 +604,7 @@ func TestUpdatesConfigMap(t *testing.T) {
 				"IMAGES":                 "java11-maven=quay.io/eclipse/che-java11-maven:nightly;che-theia=quay.io/eclipse/che-theia:next;java-plugin-runner=eclipse/che-remote-plugin-runner-java8:latest",
 				"NODE_SELECTOR":          "{}",
 				"IMAGE_PULL_SECRETS":     "",
+				"AFFINITY":               "{}",
 				"NAMESPACE":              "test",
 			},
 		},

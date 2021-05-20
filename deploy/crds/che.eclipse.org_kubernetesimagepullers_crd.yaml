@@ -32,6 +32,8 @@ spec:
           spec:
             description: KubernetesImagePullerSpec defines the desired state of KubernetesImagePuller
             properties:
+              affinity:
+                type: string
               cachingCPULimit:
                 type: string
               cachingCPURequest:
