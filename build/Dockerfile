@@ -1,4 +1,4 @@
-# Copyright (c) 2020 Red Hat, Inc.
+# Copyright (c) 2020-2021 Red Hat, Inc.
 # This program and the accompanying materials are made
 # available under the terms of the Eclipse Public License 2.0
 # which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -10,7 +10,7 @@
 #
 
 # https://access.redhat.com/containers/?tab=tags#/registry.access.redhat.com/ubi8/go-toolset
-FROM registry.access.redhat.com/ubi8/go-toolset:1.15.7-11 as builder
+FROM registry.access.redhat.com/ubi8/go-toolset:1.15.13-4 as builder
 ENV GOPATH=/go/
 USER root
 ADD . /go/src/github.com/che-incubator/kubernetes-image-puller-operator
@@ -19,7 +19,7 @@ RUN go test -v ./pkg... ./cmd...
 RUN go build -o build/_output/bin/kubernetes-image-puller-operator cmd/manager/main.go
 
 # https://access.redhat.com/containers/?tab=tags#/registry.access.redhat.com/ubi8-minimal
-FROM registry.access.redhat.com/ubi8-minimal:8.4-200.1622548483
+FROM registry.access.redhat.com/ubi8-minimal:8.4-205
 
 ENV OPERATOR=/usr/local/bin/kubernetes-image-puller-operator \
     USER_UID=1001 \
