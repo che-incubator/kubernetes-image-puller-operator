@@ -26,7 +26,7 @@ ENV OPERATOR=/usr/local/bin/kubernetes-image-puller-operator \
     USER_NAME=kubernetes-image-puller-operator
 
 # install operator binary
-COPY --from=build /go/src/github.com/che-incubator/kubernetes-image-puller-operator/build/_output/bin/kubernetes-image-puller-operator ${OPERATOR}
+COPY --from=builder /go/src/github.com/che-incubator/kubernetes-image-puller-operator/build/_output/bin/kubernetes-image-puller-operator ${OPERATOR}
 
 COPY build/bin /usr/local/bin
 RUN  /usr/local/bin/user_setup
