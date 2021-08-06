@@ -45,6 +45,7 @@ func DefaultImagePullerConfigMap(namespace string, name string) *corev1.ConfigMa
 			"NODE_SELECTOR":          "{}",
 			"IMAGE_PULL_SECRETS":     "",
 			"AFFINITY":               "{}",
+			"KIP_IMAGE":              "quay.io/eclipse/kubernetes-image-puller:next",
 			"NAMESPACE":              namespace,
 		},
 	}
@@ -87,6 +88,9 @@ func mergeConfigMapWithCR(instance *chev1alpha1.KubernetesImagePuller, defaultCo
 	}
 	if instance.Spec.DaemonsetName != "" {
 		defaultConfigMap.Data["DAEMONSET_NAME"] = instance.Spec.DaemonsetName
+	}
+	if instance.Spec.ImagePullerImage != "" {
+		defaultConfigMap.Data["KIP_IMAGE"] = instance.Spec.ImagePullerImage
 	}
 	return defaultConfigMap
 }

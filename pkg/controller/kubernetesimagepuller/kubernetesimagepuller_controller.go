@@ -342,7 +342,7 @@ func NewImagePullerDeployment(cr *chev1alpha1.KubernetesImagePuller) *appsv1.Dep
 					Containers: []corev1.Container{
 						{
 							Name:  "kubernetes-image-puller",
-							Image: "quay.io/eclipse/kubernetes-image-puller:latest",
+							Image: "quay.io/eclipse/kubernetes-image-puller:next",
 							Env: []corev1.EnvVar{{
 								Name:  "DEPLOYMENT_NAME",
 								Value: deploymentName,
