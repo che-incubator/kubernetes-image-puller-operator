@@ -22,6 +22,7 @@ type KubernetesImagePullerSpec struct {
 	NodeSelector         string `json:"nodeSelector,omitempty"`
 	ImagePullSecrets     string `json:"imagePullSecrets,omitempty"`
 	Affinity             string `json:"affinity,omitempty"`
+	ImagePullerImage     string `json:"imagePullerImage,omitempty"`
 }
 
 // KubernetesImagePullerStatus defines the observed state of KubernetesImagePuller

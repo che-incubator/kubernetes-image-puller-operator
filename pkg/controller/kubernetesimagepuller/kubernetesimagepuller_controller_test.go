@@ -385,6 +385,7 @@ func TestCreatesConfigMap(t *testing.T) {
 					"NODE_SELECTOR":          "{}",
 					"IMAGE_PULL_SECRETS":     "",
 					"AFFINITY":               "{}",
+					"KIP_IMAGE":              "quay.io/eclipse/kubernetes-image-puller:next",
 					"NAMESPACE":              "test",
 				},
 				ObjectMeta: metav1.ObjectMeta{
@@ -431,6 +432,7 @@ func TestCreatesConfigMap(t *testing.T) {
 					"NODE_SELECTOR":          "{}",
 					"IMAGE_PULL_SECRETS":     "",
 					"AFFINITY":               "{}",
+					"KIP_IMAGE":              "quay.io/eclipse/kubernetes-image-puller:next",
 					"NAMESPACE":              "test",
 				},
 				ObjectMeta: metav1.ObjectMeta{
@@ -475,6 +477,7 @@ func TestCreatesConfigMap(t *testing.T) {
 					"NODE_SELECTOR":          "{}",
 					"IMAGE_PULL_SECRETS":     "",
 					"AFFINITY":               "{}",
+					"KIP_IMAGE":              "quay.io/eclipse/kubernetes-image-puller:next",
 					"NAMESPACE":              "test",
 				},
 				ObjectMeta: metav1.ObjectMeta{
@@ -565,6 +568,7 @@ func TestUpdatesConfigMap(t *testing.T) {
 				"NODE_SELECTOR":          "{}",
 				"IMAGE_PULL_SECRETS":     "",
 				"AFFINITY":               "{}",
+				"KIP_IMAGE":              "quay.io/eclipse/kubernetes-image-puller:next",
 				"NAMESPACE":              "test",
 			},
 		},
@@ -605,6 +609,7 @@ func TestUpdatesConfigMap(t *testing.T) {
 				"NODE_SELECTOR":          "{}",
 				"IMAGE_PULL_SECRETS":     "",
 				"AFFINITY":               "{}",
+				"KIP_IMAGE":              "quay.io/eclipse/kubernetes-image-puller:next",
 				"NAMESPACE":              "test",
 			},
 		},
