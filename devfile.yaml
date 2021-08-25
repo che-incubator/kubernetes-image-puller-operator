@@ -1,16 +1,11 @@
 apiVersion: 1.0.0
 metadata:
   generateName: kubernetes-image-puller-operator-
-projects:
-  - name: kubernetes-image-puller-operator
-    source:
-      location: 'https://github.com/che-incubator/kubernetes-image-puller-operator.git'
-      type: git
-      branch: master
+
 attributes:
   persistVolumes: 'true'
 components:
-  - id: ms-vscode/go/latest
+  - id: golang/go/latest
     memoryLimit: 512Mi
     preferences:
       go.lintTool: golangci-lint
