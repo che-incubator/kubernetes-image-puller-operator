@@ -48,21 +48,27 @@ https://github.com/operator-framework/community-operators/pull/1661
 
 https://github.com/operator-framework/community-operators/pull/1662
 
-### Building
+### Development
+
+#### Prequisites
+* Go >=`1.15`
+* Operator SDK `v0.19.4` (recommended)
+
+#### Building
 
 `operator-sdk build quay.io/eclipse/kubernetes-image-puller-operator:tag`
 
-### Testing
+#### Testing
 
 `go test -v ./pkg... ./cmd...`
 
-### Releasing a new version of the operator to OperatorHub
+#### Releasing a new version of the operator to OperatorHub
 
 A quirk of this project is that while the repository is named `kubernetes-image-puller-operator`, the operator bundle on OperatorHub is named `kubernetes-imagepuller-operator`.  This was caused by the previous version of OLM deployment that required a Quay.io Application.  
 
 1. Change the version in `version/version.go` to match your new operator bundle version.  If your new bundle is v0.5.1, for example, this is what the `Version` var should be in `version/version.go`.
 2. Make a directory in `deploy/olm-catalog/kubernetes-imagepuller-operator/VERSION`
-3. Run `operator-sdk generate k8s` and `operator-sdk generate crds`
+3. Run `operator-sdk generate k8s` and `operator-sdk generate crds --crd-version=v1`
 4. Copy a previous version of `kubernetes-imagepuller-operator.vX.X.X.clusterserviceversion.yaml` to the new folder you made in step 2
 5. Edit the new `kubernetes-imagepuller-operator.vX.X.X.clusterserviceversion.yaml` and change the following fields:
   - `name` -  replace the verison tag to the new version
