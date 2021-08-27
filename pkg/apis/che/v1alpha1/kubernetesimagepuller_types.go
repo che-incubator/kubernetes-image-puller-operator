@@ -27,6 +27,7 @@ type KubernetesImagePullerSpec struct {
 
 // KubernetesImagePullerStatus defines the observed state of KubernetesImagePuller
 type KubernetesImagePullerStatus struct {
+	ImagePullerImage string `json:"imagePullerImage,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

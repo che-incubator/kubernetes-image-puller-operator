@@ -139,6 +139,16 @@ func (r *ReconcileKubernetesImagePuller) Reconcile(request reconcile.Request) (r
 		return reconcile.Result{}, nil
 	}
 
+	// If there is no image puller image set, update with the default image puller image
+	if instance.Spec.ImagePullerImage == "" {
+		instance.Spec.ImagePullerImage = "quay.io/eclipse/kubernetes-image-puller:next"
+		if err = r.client.Update(context.TODO(), instance); err != nil {
+			reqLogger.Error(err, "Error updating KubernetesImagePuller")
+			return reconcile.Result{}, err
+		}
+		return reconcile.Result{}, nil
+	}
+
 	// Create the Role to allow the ServiceAccount to create Daemonsets
 	foundRole := &rbacv1.Role{}
 	err = r.client.Get(context.TODO(), types.NamespacedName{Namespace: instance.Namespace, Name: "create-daemonset"}, foundRole)
@@ -305,6 +315,22 @@ func (r *ReconcileKubernetesImagePuller) Reconcile(request reconcile.Request) (r
 		}
 	}
 
+	// If ImagePullerImage from deployment is different than the spec, update deployment
+	if instance.Spec.ImagePullerImage != instance.Status.ImagePullerImage {
+		instance.Status.ImagePullerImage = instance.Spec.ImagePullerImage
+		err = r.client.Status().Update(context.TODO(), instance)
+		if err != nil {
+			reqLogger.Error(err, "Error updating custom resource status")
+			return reconcile.Result{}, err
+		}
+
+		err = r.client.Update(context.TODO(), NewImagePullerDeployment(instance))
+		if err != nil {
+			reqLogger.Error(err, "Error updating deployment")
+			return reconcile.Result{}, err
+		}
+	}
+
 	// Everything already exists
 	reqLogger.Info("End Reconcile")
 	return reconcile.Result{}, nil
@@ -342,7 +368,7 @@ func NewImagePullerDeployment(cr *chev1alpha1.KubernetesImagePuller) *appsv1.Dep
 					Containers: []corev1.Container{
 						{
 							Name:  "kubernetes-image-puller",
-							Image: "quay.io/eclipse/kubernetes-image-puller:next",
+							Image: cr.Spec.ImagePullerImage,
 							Env: []corev1.EnvVar{{
 								Name:  "DEPLOYMENT_NAME",
 								Value: deploymentName,
