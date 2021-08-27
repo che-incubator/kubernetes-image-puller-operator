@@ -59,7 +59,7 @@ jobs:
       name: Create failure MM message
       if: ${{ failure() }}
       run: |
-        echo "{\"text\":\":no_entry_sign: Kubernetes Image puller Operator build has failed: https://github.com/che-incubator/kubernetes-image-puller/actions/workflows/next-build.yml\"}" > mattermost.json
+        echo "{\"text\":\":no_entry_sign: Kubernetes Image puller Operator build has failed: https://github.com/che-incubator/kubernetes-image-puller-operator/actions/workflows/next-build.yml\"}" > mattermost.json
     - 
       name: Send MM message
       if: ${{ failure() }}
