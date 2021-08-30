@@ -1,5 +1,3 @@
-[![master](https://ci.centos.org/buildStatus/icon?subject=master&job=devtools-che-incubator-kubernetes-image-puller-operator-build-master/)](https://ci.centos.org/job/devtools-che-incubator-kubernetes-image-puller-operator-build-master/)
-[![nightly](https://ci.centos.org/buildStatus/icon?subject=nightly&job=devtools-kubernetes-image-puller-operator-nightly)](https://ci.centos.org/job/devtools-kubernetes-image-puller-operator-nightly/)
 ![Next Build Status](https://github.com/che-incubator/kubernetes-image-puller-operator/actions/workflows/next-build.yml/badge.svg)
 ![Release Build Status](https://github.com/che-incubator/kubernetes-image-puller-operator/actions/workflows/release.yml/badge.svg)
 
