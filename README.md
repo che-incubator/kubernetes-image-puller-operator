@@ -40,12 +40,6 @@ kubectl apply -f deploy/
 kubectl apply -f deploy/crds/
 ```
 
-There are pull requests to add the operator to the community-operators repository so you can install via OLM:
-
-https://github.com/operator-framework/community-operators/pull/1661
-
-https://github.com/operator-framework/community-operators/pull/1662
-
 ### Development
 
 #### Prequisites
@@ -81,7 +75,9 @@ A quirk of this project is that while the repository is named `kubernetes-image-
 You now have a new version of the CSV and CRD, and can open a PR to `kubernetes-image-puller-operator` to keep everything in sync.
 
 Then, to see these changes on OperatorHub:
-1. Clone the [`community-operators`](https://github.com/operator-framework/community-operators) repository.
-2. Copy `deploy/olm-catalog/kubernetes-imagepuller-operator/` to [`community-operators/community-operators` and `community-operators/upstream-community-operators`](https://github.com/operator-framework/community-operators)
+1. Clone the [`community-operators`](https://github.com/k8s-operatorhub/community-operators) and [community-operators-prod](https://github.com/redhat-openshift-ecosystem/community-operators-prod/) repositories.
+2. Copy `deploy/olm-catalog/kubernetes-imagepuller-operator/` to the `kubernetes-imagepuller-operator` folder of those reposi
 3. Optionally run some tests to confirm your changes are good (see [testing operators](https://github.com/operator-framework/community-operators/blob/master/docs/testing-operators.md)
-4. Open two separate pull requests to [community-operators](https://github.com/operator-framework/community-operators), one for `community-operators` and one for `upstream-community-operators`.
+4. Open two separate pull requests to [`community-operators`](https://github.com/k8s-operatorhub/community-operators/) and [community-operators-prod](https://github.com/redhat-openshift-ecosystem/community-operators-prod/) repositories. Examples of the PRs:
+- https://github.com/k8s-operatorhub/community-operators/pull/96
+- https://github.com/redhat-openshift-ecosystem/community-operators-prod/pull/87
