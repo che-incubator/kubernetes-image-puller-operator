@@ -55,7 +55,7 @@ jobs:
       with:
         context: .
         file: ./build/Dockerfile
-        tags:  quay.io/eclipse/${{ steps.prep.outputs.image }}:${{ steps.prep.outputs.version }},quay.io/eclipse/${{ steps.prep.outputs.image }}:${{ steps.prep.outputs.short_sha1 }},quay.io/eclipse/${{ steps.prep.outputs.image }}:latest
+        tags:  quay.io/eclipse/${{ steps.prep.outputs.image }}:${{ steps.prep.outputs.version }},quay.io/eclipse/${{ steps.prep.outputs.image }}:${{ steps.prep.outputs.short_sha1 }}
         push: true
     - 
       name: Send MM message
