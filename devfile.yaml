@@ -19,7 +19,7 @@ components:
     memoryLimit: 2Gi
     type: dockerimage
     alias: go-cli
-    image: 'quay.io/tgeorge/che-golang-1.13:latest'
+    image: 'quay.io/eclipse/che-golang-1.12:next'
     env:
       - value: '/go:$(CHE_PROJECTS_ROOT)'
         name: GOPATH
