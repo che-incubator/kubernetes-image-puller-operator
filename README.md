@@ -7,7 +7,7 @@
 
 An operator to install, configure, and manage a [kubernetes-image-puller](https://github.com/che-incubator/kubernetes-image-puller) deployment.
 
-The kubernetes-image-puller creates daemonsets that will run a list of images on your cluster, allowing Eclipse Che to start workspaces faster, because those images have been pre-pulled.  For more information about the kubernetes-image-puller, consult the kubernetes-image-puller [README](https://github.com/che-incubator/kubernetes-image-puller/blob/master/README.md).
+The kubernetes-image-puller creates daemonsets that will run a list of images on a cluster, allowing Eclipse Che to start workspaces faster, because those images have been pre-pulled.  For more information about the kubernetes-image-puller, consult the kubernetes-image-puller [README](https://github.com/che-incubator/kubernetes-image-puller/blob/master/README.md).
 
 The operator provides a `KubernetesImagePuller` custom resource definition (CRD) to install and configure a kubernetes-image-puller instance.
 
