@@ -11,25 +11,6 @@ The kubernetes-image-puller creates daemonsets that will run a list of images on
 
 The operator provides a `KubernetesImagePuller` custom resource definition (CRD) to install and configure a kubernetes-image-puller instance.
 
-### Example Custom Resource
-
-```yaml
-apiVersion: che.eclipse.org/v1alpha1
-kind: KubernetesImagePuller
-metadata:
-  name: image-puller
-spec:
-  deploymentName: kubernetes-image-puller # the name of the deployment the operator creates
-  configMapName: k8s-image-puller # the name of the configmap the operator creates
-  daemonsetName: k8s-image-puller # the name of subsequent daemonsets created by the kubernetes-image-puller
-  images: >- # the list of images to pre-pull
-  	che-theia=quay.io/eclipse/che-theia:next;java11-maven=quay.io/eclipse/che-java11-maven:nightly
-  cachingIntervalHours: '2' # number of hours between health checks
-  cachingMemoryRequest: '10Mi' # the memory request for each pre-pulled image
-  cachingMemoryLimit: '20Mi' # the memory limit for each pre-pulled image
-  nodeSelector: '{}' # node selector applied to pods created by the daemonset
-```
-
 ### Installing The Operator
 
 #### Installing on OperatorHub
