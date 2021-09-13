@@ -3,7 +3,7 @@ package config
 import (
 	"reflect"
 
-	chev1alpha1 "github.com/che-incubator/kubernetes-image-puller-operator/pkg/apis/che/v1alpha1"
+	chev1alpha1 "github.com/che-incubator/kubernetes-image-puller-operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -12,7 +12,7 @@ func NewImagePullerConfigMap(instance *chev1alpha1.KubernetesImagePuller) *corev
 	defaultConfigMap := DefaultImagePullerConfigMap(instance.Namespace, instance.Spec.ConfigMapName)
 	newConfigMap := mergeConfigMapWithCR(instance, defaultConfigMap)
 	newConfigMap.ObjectMeta.OwnerReferences = []metav1.OwnerReference{
-		*metav1.NewControllerRef(instance, chev1alpha1.SchemeGroupVersion.WithKind("KubernetesImagePuller")),
+		*metav1.NewControllerRef(instance, chev1alpha1.SchemeBuilder.GroupVersion.WithKind("KubernetesImagePuller")),
 	}
 	return newConfigMap
 }
@@ -36,7 +36,7 @@ func DefaultImagePullerConfigMap(namespace string, name string) *corev1.ConfigMa
 		},
 		Data: map[string]string{
 			"DAEMONSET_NAME":         "kubernetes-image-puller",
-			"IMAGES":                 "java11-maven=quay.io/eclipse/che-java11-maven:nightly;che-theia=quay.io/eclipse/che-theia:next;java-plugin-runner=eclipse/che-remote-plugin-runner-java8:latest",
+			"IMAGES":                 "java11-maven=quay.io/eclipse/che-java11-maven:next;che-theia=quay.io/eclipse/che-theia:next;java-plugin-runner=eclipse/che-remote-plugin-runner-java8:latest",
 			"CACHING_INTERVAL_HOURS": "1",
 			"CACHING_MEMORY_REQUEST": "10Mi",
 			"CACHING_MEMORY_LIMIT":   "20Mi",

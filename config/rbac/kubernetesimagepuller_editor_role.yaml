@@ -1,0 +1,24 @@
+# permissions for end users to edit kubernetesimagepullers.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubernetesimagepuller-editor-role
+rules:
+- apiGroups:
+  - che.eclipse.org
+  resources:
+  - kubernetesimagepullers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - che.eclipse.org
+  resources:
+  - kubernetesimagepullers/status
+  verbs:
+  - get
