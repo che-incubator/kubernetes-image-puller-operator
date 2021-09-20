@@ -29,14 +29,14 @@ BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 #
 # For example, running 'make bundle-build bundle-push catalog-build catalog-push' will build and push both
 # quay.io/eclipse/kubernetes-image-puller-operator-bundle:$VERSION and quay.io/eclipse/kubernetes-image-puller-operator-catalog:$VERSION.
-IMAGE_TAG_BASE ?= quay.io/aandriienko/kubernetes-image-puller-operator
+IMAGE_TAG_BASE ?= quay.io/eclipse/kubernetes-image-puller-operator
 
 # BUNDLE_IMG defines the image:tag used for the bundle.
 # You can use it as an arg. (E.g make bundle-build BUNDLE_IMG=<some-registry>/<project-name-bundle>:<tag>)
 BUNDLE_IMG ?= $(IMAGE_TAG_BASE)-bundle:v$(VERSION)
 
 # Image URL to use all building/pushing image targets
-IMG ?= quay.io/aandriienko/kubernetes-image-puller-operator:0.0.9
+IMG ?= quay.io/eclipse/kubernetes-image-puller-operator:0.0.9
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true,preserveUnknownFields=false"
 
@@ -248,4 +248,4 @@ bundle-pre-release:
 	sed -i -e "s/\(name: kubernetes-imagepuller-operator.v\).*/\1$${version}/" "$${csvFileRelease}"
 	sed -ri "s/version: [0-9]+.[0-9]+.[0-9]/version: $${version}/g" "$${csvFileRelease}"
 	sed -ri "s/replaces: kubernetes-imagepuller-operator.v[0-9]+.[0-9]+.[0-9]/replaces: kubernetes-imagepuller-operator.$${previousPackageVersion}/g" "$${csvFileRelease}"
-	sed -ri "s|image: quay.io/aandriienko/kubernetes-image-puller-operator:next|image: quay.io/aandriienko/kubernetes-image-puller-operator:$${version}|g" "$${csvFileRelease}"
+	sed -ri "s|image: quay.io/eclipse/kubernetes-image-puller-operator:next|image: quay.io/eclipse/kubernetes-image-puller-operator:$${version}|g" "$${csvFileRelease}"

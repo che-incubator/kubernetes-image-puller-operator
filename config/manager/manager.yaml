@@ -17,7 +17,7 @@ spec:
       serviceAccountName: kubernetes-image-puller-operator
       containers:
       - name: kubernetes-image-puller-operator
-        image: quay.io/aandriienko/kubernetes-image-puller-operator:next
+        image: quay.io/eclipse/kubernetes-image-puller-operator:next
         command:
         - /manager
         args:
