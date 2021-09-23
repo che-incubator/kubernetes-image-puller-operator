@@ -6,7 +6,7 @@ metadata:
     capabilities: Seamless Upgrades
     categories: Developer Tools
     certified: "false"
-    containerImage: quay.io/eclipse/kubernetes-image-puller-operator:0.0.9
+    containerImage: quay.io/eclipse/kubernetes-image-puller-operator:next
     createdAt: ""
     description: Create and manage kubernetes-image-puller instances.
     repository: https://github.com/che-incubator/kubernetes-image-puller-operator

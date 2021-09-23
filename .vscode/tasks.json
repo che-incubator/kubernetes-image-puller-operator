@@ -28,7 +28,7 @@
             "group": "build"
         },
         {
-            "label": "Update dependencies",
+            "label": "Update golang dependencies",
             "command": "go mod tidy",
             "type": "shell",
             "args": [],
@@ -137,7 +137,7 @@
             }
         },
         {
-            "label": "UnInstall operator via OLM",
+            "label": "Uninstall operator via OLM",
             "command": "operator-sdk cleanup kubernetes-imagepuller-operator --namespace ${NAMESPACE}",
             "type": "shell",
             "args": [],
@@ -157,7 +157,7 @@
 
         {
             "label": "Deploy operator",
-            "command": "make deploy IMG=\"${IMAGE_REGISTRY_HOST}/${IMAGE_REGISTRY_USER_NAME}/kubernetes-image-puller-operator:next\" -s; kubectl apply -f config/samples/che_v1alpha1_kubernetesimagepuller.yaml -n kubernetes-image-puller-operator",
+            "command": "make deploy IMG=\"${IMAGE_REGISTRY_HOST}/${IMAGE_REGISTRY_USER_NAME}/kubernetes-image-puller-operator:next\" -s; kubectl apply -f config/samples/che_v1alpha1_kubernetesimagepuller.yaml -n \"NAMESPACE\"",
             "type": "shell",
             "args": [],
             "problemMatcher": [
@@ -166,11 +166,16 @@
             "presentation": {
                 "reveal": "always"
             },
-            "group": "build"
+            "group": "build",
+            "options": {
+                "env": {
+                    "NAMESPACE": "kubernetes-image-puller-operator"
+                }
+            }
         },
         {
-            "label": "UnDeploy operator",
-            "command": "make undeploy",
+            "label": "Undeploy operator",
+            "command": "make undeploy -s",
             "type": "shell",
             "args": [],
             "problemMatcher": [

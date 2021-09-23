@@ -36,7 +36,7 @@ IMAGE_TAG_BASE ?= quay.io/eclipse/kubernetes-image-puller-operator
 BUNDLE_IMG ?= $(IMAGE_TAG_BASE)-bundle:v$(VERSION)
 
 # Image URL to use all building/pushing image targets
-IMG ?= quay.io/eclipse/kubernetes-image-puller-operator:0.0.9
+IMG ?= quay.io/eclipse/kubernetes-image-puller-operator:next
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true,preserveUnknownFields=false"
 
@@ -115,7 +115,7 @@ uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified 
 	$(KUSTOMIZE) build config/crd | kubectl delete -f -
 
 deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
-	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	cd config/manager && $(KUSTOMIZE) edit set image quay.io/eclipse/kubernetes-image-puller-operator:next=${IMG}
 	cd ../..
 	$(KUSTOMIZE) build config/default | kubectl apply -f -
 
@@ -155,7 +155,7 @@ endef
 .PHONY: bundle
 bundle: manifests kustomize ## Generate bundle manifests and metadata, then validate generated files.
 	operator-sdk generate kustomize manifests -q
-	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
+	cd config/manager && $(KUSTOMIZE) edit set image quay.io/eclipse/kubernetes-image-puller-operator:next=$(IMG)
 	cd ../..
 	$(KUSTOMIZE) build config/manifests | operator-sdk generate bundle -q --overwrite --package kubernetes-imagepuller-operator --version $(VERSION) $(BUNDLE_METADATA_OPTS)
 	operator-sdk bundle validate ./bundle
@@ -209,13 +209,16 @@ catalog-build: opm ## Build a catalog image.
 catalog-push: ## Push a catalog image.
 	$(MAKE) docker-push IMG=$(CATALOG_IMG)
 
-bundle-pre-release:
-	version=$(VERSION)
+release-bundle:
+	version=$(RELEASE_VERSION)
 	if [ -z "$${version}" ]; then
-		echo "Specify release version, please. For example: 'make bundle-pre-release VERSION=0.0.10'"
+		echo "Specify release version, please. For example: 'make release-bundle RELEASE_VERSION=0.0.10'"
 		exit 1
 	fi
-	
+
+	# Update CRD files.
+	$(MAKE) generate manifests -s
+
 	manifestPath="bundle/manifests"
 	csvFileNext="$${manifestPath}/kubernetes-imagepuller-operator.clusterserviceversion.yaml"
 	crdNext="$${manifestPath}/che.eclipse.org_kubernetesimagepullers.yaml"
@@ -224,6 +227,16 @@ bundle-pre-release:
 	packageVersionPath="$${packagePath}/$${version}"
 	csvFileRelease="$${packageVersionPath}/kubernetes-imagepuller-operator.v$${version}.clusterserviceversion.yaml"
 	crdRelease="$${packageVersionPath}/che.eclipse.org_kubernetesimagepullers_crd.yaml"
+
+	operatorPackageFile="$${packagePath}/kubernetes-imagepuller-operator.package.yaml"
+	previousPackageVersion=$$(cat $${operatorPackageFile} | grep -Eo "v[0-9]+.[0-9]+.[0-9]+")
+
+	# Set up csv file version
+	sed -i -e "s/\(containerImage:\).*/\1 quay.io\/eclipse\/kubernetes-image-puller-operator:$${version}/" "$${csvFileNext}"
+	sed -i -e "s/\(name: kubernetes-imagepuller-operator.v\).*/\1$${version}/" "$${csvFileNext}"
+	sed -ri "s/version: [0-9]+.[0-9]+.[0-9]/version: $${version}/g" "$${csvFileNext}"
+	sed -ri "s/replaces: kubernetes-imagepuller-operator.v[0-9]+.[0-9]+.[0-9]/replaces: kubernetes-imagepuller-operator.$${previousPackageVersion}/g" "$${csvFileNext}"
+	sed -ri "s|image: quay.io/eclipse/kubernetes-image-puller-operator:next|image: quay.io/eclipse/kubernetes-image-puller-operator:$${version}|g" "$${csvFileNext}"
 
 	mkdir -p "$${packageVersionPath}"
 
@@ -239,13 +252,8 @@ bundle-pre-release:
 	"$${packageVersionPath}/"
 
 	# Set up new package version
-	operatorPackageFile="$${packagePath}/kubernetes-imagepuller-operator.package.yaml"
-	previousPackageVersion=$$(cat $${operatorPackageFile} | grep -Eo "v[0-9]+.[0-9]+.[0-9]+")
 	sed -i -e "s/\(currentCSV:\).*/\1 kubernetes-imagepuller-operator.v$${version}/" "$${operatorPackageFile}"
 
-	# Set up csv file version
-	sed -i -e "s/\(containerImage:\).*/\1 quay.io\/eclipse\/kubernetes-image-puller-operator:$${version}/" "$${csvFileRelease}"
-	sed -i -e "s/\(name: kubernetes-imagepuller-operator.v\).*/\1$${version}/" "$${csvFileRelease}"
-	sed -ri "s/version: [0-9]+.[0-9]+.[0-9]/version: $${version}/g" "$${csvFileRelease}"
-	sed -ri "s/replaces: kubernetes-imagepuller-operator.v[0-9]+.[0-9]+.[0-9]/replaces: kubernetes-imagepuller-operator.$${previousPackageVersion}/g" "$${csvFileRelease}"
-	sed -ri "s|image: quay.io/eclipse/kubernetes-image-puller-operator:next|image: quay.io/eclipse/kubernetes-image-puller-operator:$${version}|g" "$${csvFileRelease}"
+	# Set up new version for Makefile and version.go.
+	sed -ri "s/VERSION \?= [0-9]+.[0-9]+.[0-9]/VERSION \?= $${version}/g" Makefile
+	sed -ri "s/Version = \"[0-9]+.[0-9]+.[0-9]\"/Version = \"$${version}\"/g" version/version.go
