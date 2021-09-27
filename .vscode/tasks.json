@@ -157,7 +157,7 @@
 
         {
             "label": "Deploy operator",
-            "command": "make deploy IMG=\"${IMAGE_REGISTRY_HOST}/${IMAGE_REGISTRY_USER_NAME}/kubernetes-image-puller-operator:next\" -s; kubectl apply -f config/samples/che_v1alpha1_kubernetesimagepuller.yaml -n \"NAMESPACE\"",
+            "command": "make deploy IMG=\"${IMAGE_REGISTRY_HOST}/${IMAGE_REGISTRY_USER_NAME}/kubernetes-image-puller-operator:next\" -s; kubectl apply -f config/samples/che_v1alpha1_kubernetesimagepuller.yaml -n \"${NAMESPACE}\"",
             "type": "shell",
             "args": [],
             "problemMatcher": [
