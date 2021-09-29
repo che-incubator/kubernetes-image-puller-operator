@@ -1,7 +1,7 @@
 package rbac
 
 import (
-	chev1alpha1 "github.com/che-incubator/kubernetes-image-puller-operator/pkg/apis/che/v1alpha1"
+	chev1alpha1 "github.com/che-incubator/kubernetes-image-puller-operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,7 +17,7 @@ func NewRole(cr *chev1alpha1.KubernetesImagePuller) *rbacv1.Role {
 			Name:      "create-daemonset",
 			Namespace: cr.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(cr, chev1alpha1.SchemeGroupVersion.WithKind("KubernetesImagePuller")),
+				*metav1.NewControllerRef(cr, chev1alpha1.SchemeBuilder.GroupVersion.WithKind("KubernetesImagePuller")),
 			},
 		},
 		Rules: []rbacv1.PolicyRule{{
@@ -38,7 +38,7 @@ func NewRoleBinding(cr *chev1alpha1.KubernetesImagePuller) *rbacv1.RoleBinding {
 			Name:      "create-daemonset",
 			Namespace: cr.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(cr, chev1alpha1.SchemeGroupVersion.WithKind("KubernetesImagePuller")),
+				*metav1.NewControllerRef(cr, chev1alpha1.SchemeBuilder.GroupVersion.WithKind("KubernetesImagePuller")),
 			},
 		},
 		Subjects: []rbacv1.Subject{{
@@ -63,7 +63,7 @@ func NewServiceAccount(cr *chev1alpha1.KubernetesImagePuller) *corev1.ServiceAcc
 			Name:      "k8s-image-puller",
 			Namespace: cr.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(cr, chev1alpha1.SchemeGroupVersion.WithKind("KubernetesImagePuller")),
+				*metav1.NewControllerRef(cr, chev1alpha1.SchemeBuilder.GroupVersion.WithKind("KubernetesImagePuller")),
 			},
 		},
 	}

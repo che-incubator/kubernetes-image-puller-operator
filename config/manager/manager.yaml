@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubernetes-image-puller-operator
+  labels:
+    name: kubernetes-image-puller-operator
+spec:
+  selector:
+    matchLabels:
+      name: kubernetes-image-puller-operator
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        name: kubernetes-image-puller-operator
+    spec:
+      serviceAccountName: kubernetes-image-puller-operator
+      containers:
+      - name: kubernetes-image-puller-operator
+        image: quay.io/eclipse/kubernetes-image-puller-operator:next
+        command:
+        - /manager
+        args:
+        - --leader-elect
+        imagePullPolicy: Always
+        env:
+          - name: WATCH_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: OPERATOR_NAME
+            value: "kubernetes-image-puller-operator"     
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          limits:
+            cpu: 100m
+            memory: 30Mi
+          requests:
+            cpu: 100m
+            memory: 20Mi
+      terminationGracePeriodSeconds: 10

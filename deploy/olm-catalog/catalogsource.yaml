@@ -5,4 +5,7 @@ metadata:
   namespace: olm
 spec:
   sourceType: grpc
-  image: ## CATALOG IMAGE HERE  ##
+  image: quay.io/eclipse/image-puller-catalog-source:latest
+  updateStrategy:
+    registryPoll:
+      interval: 5m

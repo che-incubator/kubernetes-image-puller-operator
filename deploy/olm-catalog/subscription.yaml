@@ -6,6 +6,6 @@ metadata:
 spec:
   channel: stable
   name: kubernetes-imagepuller-operator
-  startingCSV: kubernetes-imagepuller-operator.v0.0.3
+  startingCSV: kubernetes-imagepuller-operator.v0.0.10
   source: kubernetes-image-puller-operator-preview-catalog
   sourceNamespace: olm
