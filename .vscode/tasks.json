@@ -119,6 +119,19 @@
             "group": "build"
         },
         {
+            "label": "Build and push development bundle",
+            "command": "make catalog-build catalog-push CATALOG_IMG=${IMAGE_REGISTRY_HOST}/${IMAGE_REGISTRY_USER_NAME}/kubernetes-image-puller-operator-catalog:next BUNDLE_IMG=${IMAGE_REGISTRY_HOST}/${IMAGE_REGISTRY_USER_NAME}/kubernetes-image-puller-operator-bundle:next",
+            "type": "shell",
+            "args": [],
+            "problemMatcher": [
+                "$go"
+            ],
+            "presentation": {
+                "reveal": "always"
+            },
+            "group": "build"
+        },
+        {
             "label": "Install operator via OLM",
             "command": "kubectl apply -f config/manager/controller-namespace.yaml; operator-sdk run bundle ${IMAGE_REGISTRY_HOST}/${IMAGE_REGISTRY_USER_NAME}/kubernetes-image-puller-operator-bundle:next --namespace ${NAMESPACE}; kubectl apply -f config/samples/che_v1alpha1_kubernetesimagepuller.yaml -n ${NAMESPACE}",
             "type": "shell",
