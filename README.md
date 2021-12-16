@@ -91,7 +91,7 @@ Await while all pods in the `metrics` namespace are running.
 
 You can expose Prometheus dashboard: https://github.com/prometheus-operator/kube-prometheus#access-the-dashboards or use ingresses for this purpose.
 
-Provide more permission for Prometheuse to watch metrics in the another namespaces:
+Provide more permissions for Prometheuse to watch metrics in the another namespaces:
 
 ```bash
 kubectl patch clusterrole prometheus-k8s --type='json' -p='[{"op": "add", "path": "/rules/0", "value":
