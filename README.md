@@ -81,6 +81,60 @@ To uninstall operator with version >= 0.0.10 use command:
 make undeploy -s
 ```
 
+### Set up Prometeus from scratch and provide metrics
+
+Install kubernetes-image-puller operator. 
+
+Install Kube Prometheus https://github.com/prometheus-operator/kube-prometheus#quickstart
+
+Await while all pods in the `metrics` namespace are running. 
+
+You can expose Prometheus dashboard: https://github.com/prometheus-operator/kube-prometheus#access-the-dashboards or use ingresses for this purpose.
+
+Provide more permission for Prometheuse to watch metrics in the another namespaces:
+
+```bash
+kubectl patch clusterrole prometheus-k8s --type='json' -p='[{"op": "add", "path": "/rules/0", "value":
+{"apiGroups": [""], "resources": ["services", "endpoints", "pods"], "verbs": ["get","list","watch"]}}]'
+
+kubectl patch clusterrole prometheus-k8s --type='json' -p='[{"op": "add", "path": "/rules/0", "value":
+{"apiGroups": ["extensions"], "resources": ["ingresses"], "verbs": ["get","list","watch"]}}]'
+
+kubectl patch clusterrole prometheus-k8s --type='json' -p='[{"op": "add", "path": "/rules/0", "value":
+{"apiGroups": ["networking.k8s.io"], "resources": ["ingresses"], "verbs": ["get","list","watch"]}}]'
+```
+
+Configure Prometeus to find kubernetes-image-puller operator metrics by labels:
+
+```bash
+kubectl patch prometheus k8s -n monitoring --type='json' -p '[{ "op": "add",
+"path": "/spec/serviceMonitorSelector", "value": {
+    "matchExpressions": [
+      {
+        "key": "name",
+        "operator": "In",
+        "values": [
+          "kubernetes-image-puller-operator"
+        ]
+      }
+    ]
+  }
+}]'
+
+```
+    serviceMonitorSelector:
+      matchExpressions:
+      - key: name
+        operator: In
+        values:
+        - kubernetes-image-puller-operator
+
+Apply kubernetes-image-puller ServiceMonitor:
+
+```
+kubectl apply -f config/prometheus/monitor.yaml
+```
+
 ### Development
 
 #### Prequisites
