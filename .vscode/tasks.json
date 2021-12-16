@@ -119,7 +119,7 @@
             "group": "build"
         },
         {
-            "label": "Build and push development bundle",
+            "label": "Build and push development catalog source",
             "command": "make catalog-build catalog-push CATALOG_IMG=${IMAGE_REGISTRY_HOST}/${IMAGE_REGISTRY_USER_NAME}/kubernetes-image-puller-operator-catalog:next BUNDLE_IMG=${IMAGE_REGISTRY_HOST}/${IMAGE_REGISTRY_USER_NAME}/kubernetes-image-puller-operator-bundle:next",
             "type": "shell",
             "args": [],
