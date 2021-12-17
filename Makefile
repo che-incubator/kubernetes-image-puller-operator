@@ -244,7 +244,6 @@ release-bundle:
 	cp -rf "$${csvFileNext}" "$${csvFileRelease}"
 	cp -rf "$${crdNext}" "$${crdRelease}"
 	cp -rf \
-	"$${manifestPath}/controller-manager-metrics-monitor_monitoring.coreos.com_v1_servicemonitor.yaml" \
 	"$${manifestPath}/controller-manager-metrics-service_v1_service.yaml" \
 	"$${manifestPath}/kubernetes-image-puller-operator_v1_serviceaccount.yaml" \
 	"$${manifestPath}/manager-config_v1_configmap.yaml" \
