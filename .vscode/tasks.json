@@ -94,7 +94,7 @@
         },
         {
             "label": "Install OLM on the cluster",
-            "command": "operator-sdk olm install",
+            "command": "operator-sdk olm install --version 0.17.0",
             "type": "shell",
             "args": [],
             "problemMatcher": [
