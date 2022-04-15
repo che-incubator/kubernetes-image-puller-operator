@@ -3,7 +3,7 @@
 
 # Kubernetes Image Puller Operator
 
-[![Contribute](https://www.eclipse.org/che/contribute.svg)](https://workspaces.openshift.com#https://github.com/che-incubator/kubernetes-image-puller-operator)
+[![Contribute](https://www.eclipse.org/che/contribute.svg)](https://workspaces.openshift.com/f?url=https://github.com/che-incubator/kubernetes-image-puller-operator&override.attributes.persistVolumes=false)
 
 An operator to install, configure, and manage a [kubernetes-image-puller](https://github.com/che-incubator/kubernetes-image-puller) deployment.
 
