@@ -133,10 +133,10 @@ spec:
                 resources:
                   limits:
                     cpu: 100m
-                    memory: 30Mi
+                    memory: 128Mi
                   requests:
                     cpu: 100m
-                    memory: 20Mi
+                    memory: 64Mi
               serviceAccountName: kubernetes-image-puller-operator
               terminationGracePeriodSeconds: 10
       permissions:
@@ -273,7 +273,7 @@ spec:
     name: Ilya Buziuk
   - email: tgeorge@redhat.com
     name: Tom George
-  maturity: alpha
+  maturity: stable
   provider:
     name: Red Hat, Inc.
     url: https://github.com/che-incubator/kubernetes-image-puller-operator
