@@ -65,8 +65,6 @@ spec:
   maintainers:
   - email: ibuziuk@redhat.com
     name: Ilya Buziuk
-  - email: tgeorge@redhat.com
-    name: Tom George
   - email: abazko@redhat.com
     name: Anatolii Bazko
   maturity: stable
