@@ -67,6 +67,8 @@ spec:
     name: Ilya Buziuk
   - email: tgeorge@redhat.com
     name: Tom George
+  - email: abazko@redhat.com
+    name: Anatolii Bazko
   maturity: stable
   provider:
     name: Red Hat, Inc.
