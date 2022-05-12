@@ -160,6 +160,10 @@ bundle: manifests kustomize ## Generate bundle manifests and metadata, then vali
 	cd config/manager && $(KUSTOMIZE) edit set image quay.io/eclipse/kubernetes-image-puller-operator:next=$(IMG)
 	cd ../..
 	$(KUSTOMIZE) build config/manifests | operator-sdk generate bundle -q --overwrite --package kubernetes-imagepuller-operator --version $(VERSION) $(BUNDLE_METADATA_OPTS)
+
+	# SA already specified in a CSV, so remove a redundant one
+	rm bundle/manifests/kubernetes-image-puller-operator_v1_serviceaccount.yaml
+
 	operator-sdk bundle validate ./bundle
 
 .PHONY: bundle-build
@@ -247,7 +251,6 @@ release-bundle:
 	cp -rf "$${crdNext}" "$${crdRelease}"
 	cp -rf \
 	"$${manifestPath}/controller-manager-metrics-service_v1_service.yaml" \
-	"$${manifestPath}/kubernetes-image-puller-operator_v1_serviceaccount.yaml" \
 	"$${manifestPath}/metrics-reader_rbac.authorization.k8s.io_v1_clusterrole.yaml" \
 	"$${packageVersionPath}/"
 
