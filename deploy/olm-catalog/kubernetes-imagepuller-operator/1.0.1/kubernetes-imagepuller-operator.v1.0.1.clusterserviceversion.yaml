@@ -273,6 +273,8 @@ spec:
     name: Ilya Buziuk
   - email: abazko@redhat.com
     name: Anatolii Bazko
+  - email: dakwon@redhat.com
+    name: David Kwon
   maturity: stable
   provider:
     name: Red Hat, Inc.
