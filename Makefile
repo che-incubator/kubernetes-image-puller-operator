@@ -242,7 +242,7 @@ release-bundle:
 	sed -i -e "s/\(name: kubernetes-imagepuller-operator.v\).*/\1$${version}/" "$${csvFileNext}"
 	sed -ri "s/version: [0-9]+.[0-9]+.[0-9]/version: $${version}/g" "$${csvFileNext}"
 	sed -ri "s/replaces: kubernetes-imagepuller-operator.v[0-9]+.[0-9]+.[0-9]/replaces: kubernetes-imagepuller-operator.$${previousPackageVersion}/g" "$${csvFileNext}"
-	sed -ri "s|image: quay.io/eclipse/kubernetes-image-puller-operator:next|image: quay.io/eclipse/kubernetes-image-puller-operator:$${version}|g" "$${csvFileNext}"
+	sed -ri "s|image: quay.io/eclipse/kubernetes-image-puller-operator:[0-9]+.[0-9]+.[0-9]|image: quay.io/eclipse/kubernetes-image-puller-operator:$${version}|g" "$${csvFileNext}"
 
 	mkdir -p "$${packageVersionPath}"
 
