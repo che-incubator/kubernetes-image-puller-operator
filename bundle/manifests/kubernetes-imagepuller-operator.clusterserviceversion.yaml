@@ -115,7 +115,7 @@ spec:
                       fieldPath: metadata.name
                 - name: OPERATOR_NAME
                   value: kubernetes-image-puller-operator
-                image: quay.io/eclipse/kubernetes-image-puller-operator:1.0.1
+                image: quay.io/eclipse/kubernetes-image-puller-operator:1.0.2
                 imagePullPolicy: Always
                 livenessProbe:
                   httpGet:
