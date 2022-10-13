@@ -218,14 +218,15 @@ Build new OLM bundle image using VSCode task `Build and push development bundle`
 
 ```bash
 $ export BUNDLE_IMG="${IMAGE_REGISTRY_HOST}/${IMAGE_REGISTRY_USER_NAME}/kubernetes-image-puller-operator-bundle:next"
-$ make bundle IMG=${BUNDLE_IMG} -s
+$ export IMG="${IMAGE_REGISTRY_HOST}/${IMAGE_REGISTRY_USER_NAME}/kubernetes-image-puller-operator:next"
+$ make bundle IMG=${IMG} -s
 $ make bundle-build bundle-push -s BUNDLE_IMG=${BUNDLE_IMG}
 ```
 
 To install operator run VSCode task `Install operator via OLM` or use the terminal:
 
 ```bash
-$ operator-sdk run bundle ${IMAGE_REGISTRY_HOST}/${IMAGE_REGISTRY_USER_NAME}/kubernetes-image-puller-operator-bundle:next --namespace <NAMESPACE>
+$ operator-sdk run bundle ${BUNDLE_IMG} --namespace <NAMESPACE>
 $ kubectl apply -f config/samples/che_v1alpha1_kubernetesimagepuller.yaml -n <NAMESPACE>
 ```
 
