@@ -277,7 +277,7 @@ spec:
   provider:
     name: Red Hat, Inc.
     url: https://github.com/che-incubator/kubernetes-image-puller-operator
-  replaces: kubernetes-imagepuller-operator.v1.0.2
+  replaces: kubernetes-imagepuller-operator.v1.0.3
   selector:
     matchLabels:
       app: kubernetes-image-puller-operator
