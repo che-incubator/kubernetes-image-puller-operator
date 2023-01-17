@@ -15,8 +15,12 @@ package main
 import (
 	"flag"
 	"fmt"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/selection"
 	"os"
-
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -90,6 +94,12 @@ func main() {
 			"the manager will watch and manage resources in all Namespaces")
 	}
 
+	cacheFunction, err := getCacheFunc()
+	if err != nil {
+		setupLog.Error(err, "failed to create cache function")
+		os.Exit(1)
+	}
+
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     metricsAddr,
@@ -98,6 +108,7 @@ func main() {
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       "06ff708d.eclipse.che",
 		Namespace:              watchNamespace,
+		NewCache:               cacheFunction,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
@@ -130,4 +141,31 @@ func main() {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
+}
+
+// getCacheFunc allows to limit cache for objects by label selector.
+func getCacheFunc() (cache.NewCacheFunc, error) {
+	kubernetesImagePullerApp, err := labels.NewRequirement("app", selection.Equals, []string{"kubernetes-image-puller"})
+	if err != nil {
+		return nil, err
+	}
+	kubernetesImagePullerAppSelector := labels.NewSelector().Add(*kubernetesImagePullerApp)
+
+	setupLog.Info("Cache with selector", "app", "kubernetes-image-puller")
+
+	selectors := cache.SelectorsByObject{
+		&appsv1.Deployment{}: {
+			Label: kubernetesImagePullerAppSelector,
+		},
+		&corev1.Pod{}: {
+			Label: kubernetesImagePullerAppSelector,
+		},
+		&corev1.ConfigMap{}: {
+			Label: kubernetesImagePullerAppSelector,
+		},
+	}
+
+	return cache.BuilderWithOptions(cache.Options{
+		SelectorsByObject: selectors,
+	}), nil
 }
