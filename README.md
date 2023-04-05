@@ -11,6 +11,9 @@ The kubernetes-image-puller creates daemonsets that will run a list of images on
 
 The operator provides a `KubernetesImagePuller` custom resource definition (CRD) to install and configure a kubernetes-image-puller instance.
 
+
+
+
 ### Example Custom Resource
 
 ```yaml
