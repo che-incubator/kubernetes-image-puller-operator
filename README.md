@@ -273,3 +273,8 @@ Then, to see these changes on OperatorHub:
 4. Open two separate pull requests to [`community-operators`](https://github.com/k8s-operatorhub/community-operators/) and [`community-operators-prod`](https://github.com/redhat-openshift-ecosystem/community-operators-prod/) repositories. Examples of the PRs:
 - https://github.com/k8s-operatorhub/community-operators/pull/96
 - https://github.com/redhat-openshift-ecosystem/community-operators-prod/pull/87
+
+### Trademark
+
+"Che" is a trademark of the Eclipse Foundation.
+
