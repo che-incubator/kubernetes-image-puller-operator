@@ -200,15 +200,7 @@ A quirk of this project is that while the repository is named `kubernetes-image-
 the operator bundle on OperatorHub is named `kubernetes-imagepuller-operator`.  
 his was caused by the previous version of OLM deployment that required a Quay.io Application.  
 
-Make release bundle:
-
-```bash
-$ olm-catalog/release-catalog.sh --version <RELEASE-VERSION>
-```
-
-This command will convert OLM bundle(from `bundle` folder) to the package manifest with newer release
-version and put it to the directory `deploy/olm-catalog/kubernetes-imagepuller-operator/VERSION`.
-You now have a new version of the CSV and CRD, and can open a PR to `kubernetes-image-puller-operator` to keep everything in sync.
+Run `Release Kubernetes Image Puller operator` GitHub action to release a new bundle.
 
 Then, to see these changes on OperatorHub:
 1. Clone the [`community-operators`](https://github.com/k8s-operatorhub/community-operators) and [`community-operators-prod`](https://github.com/redhat-openshift-ecosystem/community-operators-prod/) repositories.

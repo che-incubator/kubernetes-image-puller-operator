@@ -83,7 +83,7 @@ buildOperatorImage() {
   echo "[INFO] buildOperatorImage :: Build operator image"
 
   echo "[INFO] buildOperatorImage :: Build operator image in platforms: $BUILDX_PLATFORMS"
-  docker buildx build --platform "$BUILDX_PLATFORMS" --push -t "$(make base-image):${RELEASE_VERSION}" .
+  docker buildx build --platform "$BUILDX_PLATFORMS" -f build/Dockerfile --push -t "$(make base-image):${RELEASE_VERSION}" .
 }
 
 updateVersionFile() {
