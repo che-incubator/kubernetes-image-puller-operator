@@ -95,8 +95,6 @@ releaseOlmFiles() {
 
   make bundle IMG="${RELEASE_IMAGE}"
 
-  yq -riY '.metadata.annotations.containerImage = "'${RELEASE_IMAGE}'"' ${CSV_PATH}
-  yq -riY '.spec.install.spec.deployments[0].spec.template.spec.containers[1].image = "'${RELEASE_IMAGE}'"' ${CSV_PATH}
   yq -riY '.metadata.name = "'${PACKAGE}'.v'${RELEASE_VERSION}'"' ${CSV_PATH}
   yq -riY '.spec.version = "'${RELEASE_VERSION}'"' ${CSV_PATH}
   yq -riY '.spec.replaces = "'${PACKAGE}'.v'${CURRENT_VERSION}'"' ${CSV_PATH}
