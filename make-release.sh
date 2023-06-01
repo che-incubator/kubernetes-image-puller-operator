@@ -15,7 +15,6 @@ set -e
 
 init() {
   RELEASE_VERSION="$1"
-  BRANCH=$(echo RELEASE_VERSION | sed 's/.$/x/')
   RELEASE_BRANCH="${RELEASE_VERSION}-release"
   RUN_RELEASE=false
   RELEASE_OLM_FILES=false
@@ -60,16 +59,9 @@ runUnitTests() {
 }
 
 checkoutToReleaseBranch() {
-  echo "[INFO] Check out to $BRANCH branch."
-  local branchExist=$(git ls-remote -q --heads | grep $BRANCH | wc -l)
-  if [[ $branchExist == 1 ]]; then
-    echo "[INFO] $BRANCH exists."
-    resetChanges "$BRANCH"
-  else
-    echo "[INFO] $BRANCH does not exist. Will be created a new one from main."
-    resetChanges main
-    git push origin main:"$BRANCH"
-  fi
+  echo "[INFO] Check out to $RELEASE_BRANCH branch."
+  resetChanges main
+  git push origin main:"$RELEASE_BRANCH" --force
   git checkout -B "$RELEASE_BRANCH"
 }
 
@@ -117,7 +109,7 @@ releaseOlmFiles() {
   echo "[INFO] releaseOlmFiles :: Commit changes"
   if git status --porcelain; then
     git add -A || true
-    git commit -am "ci: Release OLM files to "RELEASE_VERSION --signoff
+    git commit -am "ci: Release OLM files to "${RELEASE_VERSION} --signoff
   fi
 }
 
@@ -181,7 +173,7 @@ createPRToMainBranch() {
   resetChanges main
   local tmpBranch="copy-csv-to-main"
   git checkout -B $tmpBranch
-  git diff refs/heads/${BRANCH}...refs/heads/${RELEASE_BRANCH} | git apply -3
+  git diff refs/heads/main...refs/heads/${RELEASE_BRANCH} | git apply -3
   if git status --porcelain; then
     git add -A || true # add new generated CSV files in olm/ folder
     git commit -am "ci: Copy ${RELEASE_VERSION} csv to main" --signoff
@@ -203,7 +195,7 @@ run() {
 }
 
 init "$@"
-echo "[INFO] Release '$RELEASE_VERSION' from branch '$BRANCH'"
+echo "[INFO] Release: $RELEASE_VERSION"
 
 if [[ $RUN_RELEASE == "true" ]]; then
   run "$@"

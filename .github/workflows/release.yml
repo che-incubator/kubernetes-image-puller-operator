@@ -77,8 +77,6 @@ jobs:
           git config --global user.name "Anatolii Bazko"
           git config --global user.email "abazko@redhat.com"
           export GITHUB_TOKEN=${{ secrets.CHE_BOT_GITHUB_TOKEN }}
-          export QUAY_ECLIPSE_CHE_USERNAME=${{ secrets.QUAY_USERNAME }}
-          export QUAY_ECLIPSE_CHE_PASSWORD=${{ secrets.QUAY_PASSWORD }}
           
           set -e
 
