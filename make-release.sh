@@ -23,7 +23,6 @@ init() {
   FORCE_UPDATE=""
   CREATE_PULL_REQUESTS=false
   GIT_REMOTE_UPSTREAM="https://github.com/che-incubator/kubernetes-image-puller-operator.git"
-  BUILDX_PLATFORMS="linux/amd64,linux/ppc64le"
 
   if [[ $# -lt 1 ]]; then usage; exit; fi
 
@@ -67,20 +66,18 @@ checkoutToReleaseBranch() {
 
 buildOperatorImage() {
   echo "[INFO] buildOperatorImage :: Build operator image"
-
-  echo "[INFO] buildOperatorImage :: Build operator image in platforms: $BUILDX_PLATFORMS"
-  docker buildx build --platform "$BUILDX_PLATFORMS" -f build/Dockerfile --push -t "$(make base-image):${RELEASE_VERSION}" .
+  make docker-build docker-push IMG="$(make base-image):${RELEASE_VERSION}"
 }
 
 updateVersionFile() {
   echo "[INFO] updateVersionFile: version.go"
   # change version/version.go file
-  sed -ri "s/Version = \"[0-9]+.[0-9]+.[0-9]\"/Version = \"${NEW_VERSION}\"/g" version/version.go
+  sed -ri "s/Version = \"[0-9]+.[0-9]+.[0-9]\"/Version = \"${RELEASE_VERSION}\"/g" version/version.go
   git add version/version.go
 
   # Set up new version for Makefile and version.go.
   echo "[INFO] updateVersionFile: Makefile"
-  sed -ri "s/VERSION \?= [0-9]+.[0-9]+.[0-9]/VERSION \?= ${NEW_VERSION}/g" Makefile
+  sed -ri "s/VERSION \?= [0-9]+.[0-9]+.[0-9]/VERSION \?= ${RELEASE_VERSION}/g" Makefile
   git add Makefile
 
   git commit -m "ci: Update VERSION to ${RELEASE_VERSION}" --signoff

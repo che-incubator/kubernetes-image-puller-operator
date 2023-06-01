@@ -80,14 +80,10 @@ jobs:
           
           set -e
 
-          ./make-release.sh ${RELEASE_VERSION} --release --release-olm-files
-
-          git checkout ${CHE_VERSION}-release
-          ./make-release.sh ${RELEASE_VERSION} --push-olm-bundles
-
-          # perform extra checkouts to ensure branches exist locally
-          git checkout ${BRANCH}
-          git checkout ${RELEASE_VERSION}-release
-          force_update=""
           if [[ ${{ github.event.inputs.forceRecreateTags }} == "true" ]]; then force_update="--force"; fi
-          ./make-release.sh ${RELEASE_VERSION} --push-git-changes --pull-requests ${force_update}
+          ./make-release.sh ${RELEASE_VERSION} ${force_update} \
+            --release \
+            --release-olm-files \
+            --release-olm-bundle \
+            --push-git-changes \
+            --pull-requests 
