@@ -15,6 +15,7 @@ set -e
 
 init() {
   RELEASE_VERSION="$1"
+  RELEASE_IMAGE="$(make base-image):${RELEASE_VERSION}"
   RELEASE_BRANCH="${RELEASE_VERSION}-release"
   RUN_RELEASE=false
   RELEASE_OLM_FILES=false
@@ -66,7 +67,7 @@ checkoutToReleaseBranch() {
 
 buildOperatorImage() {
   echo "[INFO] buildOperatorImage :: Build operator image"
-  make docker-build docker-push IMG="$(make base-image):${RELEASE_VERSION}"
+  make docker-build docker-push IMG="${RELEASE_IMAGE}"
 }
 
 updateVersionFile() {
@@ -89,7 +90,6 @@ releaseOlmFiles() {
   echo "[INFO] releaseOlmFiles :: Release OLM files"
 
   CURRENT_VERSION=$(make bundle-version)
-  RELEASE_IMAGE="$(make base-image):${RELEASE_VERSION}"
   PACKAGE=$(make bundle-package)
   CSV_PATH=$(make csv-path)
 

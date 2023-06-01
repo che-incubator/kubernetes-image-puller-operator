@@ -24,13 +24,13 @@ CHANNEL = stable
 IMAGE_TAG_BASE ?= quay.io/eclipse/kubernetes-image-puller-operator
 
 # BUNDLE_IMG defines the image:tag used for the bundle.
-BUNDLE_IMG ?= $(IMAGE_TAG_BASE)-bundle:v$(VERSION)
-
-# Image URL to use all building/pushing image targets
-IMG ?= $(IMAGE_TAG_BASE):next
+BUNDLE_IMG ?= $(IMAGE_TAG_BASE)-bundle:$(VERSION)
 
 # The image tag given to the resulting catalog image
 CATALOG_IMG ?= $(IMAGE_TAG_BASE)-catalog:$(CHANNEL)
+
+# Image URL to use all building/pushing image targets
+IMG ?= $(IMAGE_TAG_BASE):$(VERSION)
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
