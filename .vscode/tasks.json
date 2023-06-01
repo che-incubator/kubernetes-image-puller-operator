@@ -54,19 +54,6 @@
             "group": "build"
         },
         {
-            "label": "Update OLM bundle",
-            "command": "make bundle",
-            "type": "shell",
-            "args": [],
-            "problemMatcher": [
-                "$go"
-            ],
-            "presentation": {
-                "reveal": "always"
-            },
-            "group": "build"
-        },
-        {
             "label": "Update CR/CRDs",
             "command": "make generate manifests",
             "type": "shell",

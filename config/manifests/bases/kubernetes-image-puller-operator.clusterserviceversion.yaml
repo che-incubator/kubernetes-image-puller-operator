@@ -71,7 +71,6 @@ spec:
   provider:
     name: Red Hat, Inc.
     url: https://github.com/che-incubator/kubernetes-image-puller-operator
-  replaces: kubernetes-imagepuller-operator.v0.0.8
   selector:
     matchLabels:
       app: kubernetes-image-puller-operator

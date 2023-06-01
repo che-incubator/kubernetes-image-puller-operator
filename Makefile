@@ -93,9 +93,14 @@ run: manifests generate fmt vet ## Run a controller from your host.
 
 ##@ Development
 
+docker-build: ## Build docker image with the manager.
+	docker build --no-cache -t ${IMG} -f build/Dockerfile .
+
+docker-push: ## Push docker image with the manager.
+	docker push ${IMG}
+
 manifests: download-controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
 	$(CONTROLLER_GEN) crd:crdVersions=v1 rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
-	#$(CONTROLLER_GEN) crd:trivialVersions=true,preserveUnknownFields=false rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 
 	# remove yaml delimitier, which makes OLM catalog source image broken.
 	sed -i '/---/d' "$(CHECLUSTER_CRD_PATH)"
@@ -125,7 +130,7 @@ uninstall: manifests download-kustomize ## Uninstall CRDs from the K8s cluster s
 
 deploy: manifests download-kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
 	cd "$(PROJECT_DIR)/config/manager"
-	$(KUSTOMIZE) edit set image quay.io/eclipse/kubernetes-image-puller-operator:next=${IMG}
+	$(KUSTOMIZE) edit set image quay.io/eclipse/kubernetes-image-puller-operator:next=$(IMG)
 	cd "$(PROJECT_DIR)"
 
 	$(KUSTOMIZE) build config/default | kubectl apply -f -
@@ -146,6 +151,10 @@ compile:
 .PHONY: bundle
 bundle: generate manifests download-kustomize download-operator-sdk ## Generate OLM bundle
 	echo "[INFO] Updating OperatorHub bundle"
+
+	cd "$(PROJECT_DIR)/config/manager"
+	$(KUSTOMIZE) edit set image quay.io/eclipse/kubernetes-image-puller-operator:next=$(IMG)
+	cd "$(PROJECT_DIR)"
 
 	# Build default clusterserviceversion file
 	$(OPERATOR_SDK) generate kustomize manifests
@@ -180,10 +189,9 @@ bundle-push: ## Push a bundle image
 
 bundle-render: SHELL := /bin/bash
 bundle-render: download-opm ## Add bundle to a catalog
-	CATALOG_PATH=$$($(MAKE) catalog-path)
-	BUNDLE_NAME=$$($(MAKE) bundle-name)
+	[[ -z "$(CATALOG_DIR)" ]] && DEFINED_CATALOG_DIR=$$($(MAKE) catalog-path) || DEFINED_CATALOG_DIR=$(CATALOG_DIR)
 
-	$(OPM) render $(BUNDLE_IMG) -o yaml --skip-tls-verify | sed 's|---||g' > $${CATALOG_PATH}/$${BUNDLE_NAME}.bundle.yaml
+	$(OPM) render $(BUNDLE_IMG) -o yaml --skip-tls-verify | sed 's|---||g' > $${DEFINED_CATALOG_DIR}/$${BUNDLE_NAME}.bundle.yaml
 
 bundle-path: ## Prints path to a bundle
 	echo "$(PROJECT_DIR)/bundle"

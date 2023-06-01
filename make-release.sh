@@ -17,15 +17,13 @@ init() {
   RELEASE_VERSION="$1"
   BRANCH=$(echo RELEASE_VERSION | sed 's/.$/x/')
   RELEASE_BRANCH="${RELEASE_VERSION}-release"
-  GIT_REMOTE_UPSTREAM="https://github.com/che-incubator/kubernetes-image-puller-operator.git"
   RUN_RELEASE=false
   RELEASE_OLM_FILES=false
   RELEASE_OLM_BUNDLE=false
-
   PUSH_GIT_CHANGES=false
   FORCE_UPDATE=""
   CREATE_PULL_REQUESTS=false
-  OPERATOR_REPO="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
+  GIT_REMOTE_UPSTREAM="https://github.com/che-incubator/kubernetes-image-puller-operator.git"
   BUILDX_PLATFORMS="linux/amd64,linux/ppc64le"
 
   if [[ $# -lt 1 ]]; then usage; exit; fi
@@ -44,13 +42,9 @@ init() {
   done
 }
 
-#usage () {
-#  echo "Usage:   $0 [RELEASE_VERSION] --push-olm-bundles --push-git-changes"
-#  echo -e "\t--push-olm-bundles: to push OLM bundle images to quay.io and update catalog image. This flag should be omitted "
-#  echo -e "\t\tif already a greater version released. For instance, we are releasing 7.9.3 version but"
-#  echo -e "\t\t7.10.0 already exists. Otherwise it breaks the linear update path of the stable channel."
-#  echo -e "\t--push-git-changes: to create release branch and push changes into."
-#}
+usage () {
+  echo "Usage:   $0 [RELEASE_VERSION] --release --release-olm-files --release-olm-bundle --push-git-changes --pull-requests"
+}
 
 resetChanges() {
   echo "[INFO] Reset changes in $1 branch"
@@ -70,13 +64,13 @@ checkoutToReleaseBranch() {
   local branchExist=$(git ls-remote -q --heads | grep $BRANCH | wc -l)
   if [[ $branchExist == 1 ]]; then
     echo "[INFO] $BRANCH exists."
-    resetChanges $BRANCH
+    resetChanges "$BRANCH"
   else
     echo "[INFO] $BRANCH does not exist. Will be created a new one from main."
     resetChanges main
-    git push origin main:$BRANCH
+    git push origin main:"$BRANCH"
   fi
-  git checkout -B $RELEASE_BRANCH
+  git checkout -B "$RELEASE_BRANCH"
 }
 
 buildOperatorImage() {
@@ -110,7 +104,7 @@ releaseOlmFiles() {
   PACKAGE=$(make bundle-package)
   CSV_PATH=$(make csv-path)
 
-  make bundle
+  make bundle IMG="${RELEASE_IMAGE}"
 
   yq -riY '.metadata.annotations.containerImage = "'${RELEASE_IMAGE}'"' ${CSV_PATH}
   yq -riY '.spec.install.spec.deployments[0].spec.template.spec.containers[1].image = "'${RELEASE_IMAGE}'"' ${CSV_PATH}
@@ -157,7 +151,6 @@ releaseOlmBundle() {
 
   echo "[INFO] releaseOlmBundle :: Commit changes"
   make license "$(make catalog-path)"
-
   git add -A olm-catalog/stable
   git commit -m "ci: Add new bundle to a catalog" --signoff
 }
@@ -188,7 +181,7 @@ createPRToMainBranch() {
   resetChanges main
   local tmpBranch="copy-csv-to-main"
   git checkout -B $tmpBranch
-  git diff refs/heads/${BRANCH}...refs/heads/${RELEASE_BRANCH} ':(exclude)config/manager/manager.yaml' ':(exclude)deploy' ':(exclude)Dockerfile' | git apply -3
+  git diff refs/heads/${BRANCH}...refs/heads/${RELEASE_BRANCH} | git apply -3
   if git status --porcelain; then
     git add -A || true # add new generated CSV files in olm/ folder
     git commit -am "ci: Copy ${RELEASE_VERSION} csv to main" --signoff
@@ -225,6 +218,5 @@ if [[ $PUSH_GIT_CHANGES == "true" ]]; then
 fi
 
 if [[ $CREATE_PULL_REQUESTS == "true" ]]; then
-  createPRToXBranch
   createPRToMainBranch
 fi

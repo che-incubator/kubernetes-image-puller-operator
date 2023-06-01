@@ -7,7 +7,10 @@
 
 An operator to install, configure, and manage a [kubernetes-image-puller](https://github.com/che-incubator/kubernetes-image-puller) deployment.
 
-The kubernetes-image-puller creates daemonsets that will run a list of images on a cluster, allowing Eclipse Che to start workspaces faster, because those images have been pre-pulled.  For more information about the kubernetes-image-puller, consult the kubernetes-image-puller [README](https://github.com/che-incubator/kubernetes-image-puller/blob/master/README.md).
+The kubernetes-image-puller creates daemonsets that will run a list of images on a cluster, 
+allowing Eclipse Che to start workspaces faster, because those images have been pre-pulled.  
+For more information about the kubernetes-image-puller, consult the kubernetes-image-puller 
+[README](https://github.com/che-incubator/kubernetes-image-puller/blob/master/README.md).
 
 The operator provides a `KubernetesImagePuller` custom resource definition (CRD) to install and configure a kubernetes-image-puller instance.
 
@@ -59,10 +62,10 @@ Customize custom resource yaml and apply it:
 $ kubectl apply -f config/samples/che_v1alpha1_kubernetesimagepuller.yaml -n kubernetes-image-puller-operator
 ```
 
-To uninstall operator with version <= v0.0.9 use commands:
+To uninstall operator use commands:
 
 ```bash
-$ make undeploy -s
+$ make undeploy
 ```
 
 ### Set up Prometheus from scratch on the Kubernetes cluster and provide metrics
@@ -121,11 +124,11 @@ Click `Execute` button. Metrics logs should appear in the "Table" tab. Also you 
 
 #### Prequisites
 * Go >=`1.15`
-* Operator SDK `v1.9.2` (recommended)
+* Operator SDK `v1.9.2`
 
 #### Check code compilation
 
-Run VSCode task `Compile code` or use the terminal:
+Run the VSCode task `Compile code` or use the terminal:
 
 ```bash
 $ make compile
@@ -133,7 +136,7 @@ $ make compile
 
 #### Unit testing
 
-Run VSCode task `Run unit tests` or use the terminal:
+Run the VSCode task `Run unit tests` or use the terminal:
 
 ```bash
 $ make test
@@ -141,7 +144,7 @@ $ make test
 
 #### Format code
 
-Run VSCode task `Format code` or use the terminal:
+Run the VSCode task `Format code` or use the terminal:
 
 ```bash
 $ make fmt
@@ -149,15 +152,19 @@ $ make fmt
 
 #### Update golang dependencies
 
-This project uses Go modules and doesn't use vendor folder. Run the VSCode task: `Update dependencies` or use the terminal:
+This project uses Go modules and doesn't use a vendor folder. Run the VSCode task: `Update dependencies` or use the terminal:
 
 ```bash
 $ go mod tidy
 ```
 
-#### Building custom operator image
+#### Update Kubernetes resources
 
-Use the terminal:
+```bash
+$ make bundle
+```
+
+#### Building custom operator image
 
 ```bash
 $ make docker-build docker-push IMG=<CUSTOM_IMAGE>
@@ -165,33 +172,24 @@ $ make docker-build docker-push IMG=<CUSTOM_IMAGE>
 
 #### Installing using make
 
-Use the terminal:
-
 ```bash
+$ make docker-build docker-push IMG=<CUSTOM_IMAGE>
 $ make deploy IMG=<CUSTOM_IMAGE>
-$ kubectl apply -f config/samples/che_v1alpha1_kubernetesimagepuller.yaml -n <NAMESPACE>
+$ kubectl apply -f config/samples/che_v1alpha1_kubernetesimagepuller.yaml -n kubernetes-image-puller-operator
 ```
 
-To uninstall operator:
+To uninstall the operator:
 
 ```bash
 $ make undeploy
 ```
 
-#### Update CR/CRD
-
-Run VSCode task `Update CR/CRDs` or use the terminal:
-
-```bash
-$ make generate manifests
-```
-
-#### Update OLM bundle
-
-Run VSCode task `Update OLM bundle` or use the terminal:
+#### Installing using OLM
 
 ```bash
 $ make bundle
+$ bundle/test-bundle.sh
+$ kubectl apply -f config/samples/che_v1alpha1_kubernetesimagepuller.yaml -n kubernetes-image-puller-operator
 ```
 
 #### Releasing a new version of the operator to OperatorHub
