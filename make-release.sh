@@ -97,7 +97,6 @@ releaseOlmFiles() {
 
   yq -riY '.metadata.name = "'${PACKAGE}'.v'${RELEASE_VERSION}'"' ${CSV_PATH}
   yq -riY '.spec.version = "'${RELEASE_VERSION}'"' ${CSV_PATH}
-  yq -riY '.spec.replaces = "'${PACKAGE}'.v'${CURRENT_VERSION}'"' ${CSV_PATH}
 
   make license "$(make bundle-path)"
 
