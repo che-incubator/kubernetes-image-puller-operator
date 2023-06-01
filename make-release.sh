@@ -167,6 +167,7 @@ pushGitChanges() {
 
 createPRToMainBranch() {
   echo "[INFO] createPRToMainBranch :: Create pull request into main branch"
+  resetChanges main
   local tmpBranch="copy-${RELEASE_VERSION}-bundle-to-main"
   git checkout -B "${tmpBranch}"
   git diff refs/heads/main...refs/heads/${RELEASE_BRANCH} ':(exclude)bundle' | git apply -3

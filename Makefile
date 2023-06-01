@@ -191,6 +191,7 @@ bundle-render: SHELL := /bin/bash
 bundle-render: download-opm ## Add bundle to a catalog
 	[[ -z "$(CATALOG_DIR)" ]] && DEFINED_CATALOG_DIR=$$($(MAKE) catalog-path) || DEFINED_CATALOG_DIR=$(CATALOG_DIR)
 
+	BUNDLE_NAME=$$($(MAKE) bundle-name)
 	$(OPM) render $(BUNDLE_IMG) -o yaml --skip-tls-verify | sed 's|---||g' > $${DEFINED_CATALOG_DIR}/$${BUNDLE_NAME}.bundle.yaml
 
 bundle-path: ## Prints path to a bundle
