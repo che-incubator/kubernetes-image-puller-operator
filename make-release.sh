@@ -167,17 +167,16 @@ pushGitChanges() {
 
 createPRToMainBranch() {
   echo "[INFO] createPRToMainBranch :: Create pull request into main branch"
-  resetChanges main
-  local tmpBranch="copy-csv-to-main"
-  git checkout -B $tmpBranch
-  git diff refs/heads/main...refs/heads/${RELEASE_BRANCH} | git apply -3
+  local tmpBranch="copy-${RELEASE_VERSION}-bundle-to-main"
+  git checkout -B "${tmpBranch}"
+  git diff refs/heads/main...refs/heads/${RELEASE_BRANCH} ':(exclude)bundle' | git apply -3
   if git status --porcelain; then
-    git add -A || true # add new generated CSV files in olm/ folder
-    git commit -am "ci: Copy ${RELEASE_VERSION} csv to main" --signoff
+    git add -A || true
+    git commit -am "ci: Copy ${RELEASE_VERSION} bundle to main" --signoff
   fi
   git push origin $tmpBranch -f
   if [[ $FORCE_UPDATE == "--force" ]]; then set +e; fi  # don't fail if PR already exists (just force push commits into it)
-  hub pull-request $FORCE_UPDATE --base main --head ${tmpBranch} -m "ci: Copy ${RELEASE_VERSION} csv to main"
+  hub pull-request $FORCE_UPDATE --base main --head ${tmpBranch} -m "ci: Copy ${RELEASE_VERSION} bundle to main"
   set -e
 }
 
