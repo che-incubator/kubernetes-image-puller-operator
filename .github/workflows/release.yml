@@ -1,68 +1,89 @@
 #
-# Copyright (c) 2021 Red Hat, Inc.
+# Copyright (c) 2019-2023 Red Hat, Inc.
 # This program and the accompanying materials are made
 # available under the terms of the Eclipse Public License 2.0
 # which is available at https://www.eclipse.org/legal/epl-2.0/
 #
 # SPDX-License-Identifier: EPL-2.0
 #
+# Contributors:
+#   Red Hat, Inc. - initial API and implementation
+#
 
-name: build-release
-
+name: Release Kubernetes Image Puller operator
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - 'version/version.go'
-
+    inputs:
+      version:
+        description: 'The version that is going to be released. Should be in format 1.yy.z'
+        required: true
+      forceRecreateTags:
+        description: If true, tags will be recreated. Use with caution
+        required: false
+        default: 'false'
 jobs:
   build:
     runs-on: ubuntu-22.04
     steps:
-    -
-      name: "Set up QEMU"
-      uses: docker/setup-qemu-action@v2
-    -
-      name: "Set up Docker Buildx"
-      uses: docker/setup-buildx-action@v2
-    -
-      name: "Docker quay.io Login"
-      uses: docker/login-action@v2
-      with:
-        registry: quay.io
-        username: ${{ secrets.QUAY_USERNAME }}
-        password: ${{ secrets.QUAY_PASSWORD }}
-    - 
-      name: Clone source code
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
-    - 
-      name: Prepare
-      id: prep
-      run: |
-        set -e
-        SHORT_SHA1=$(git rev-parse --short HEAD)
-        echo ::set-output name=short_sha1::${SHORT_SHA1}
-        echo ::set-output name=version::$(grep "Version" version/version.go | cut -d '"' -f2 )
-        IMAGE=kubernetes-image-puller-operator
-        echo ::set-output name=image::${IMAGE}
-    -
-      name: "Build and push"
-      uses: docker/build-push-action@v3
-      with:
-        context: .
-        file: ./build/Dockerfile
-        tags:  quay.io/eclipse/${{ steps.prep.outputs.image }}:${{ steps.prep.outputs.version }},quay.io/eclipse/${{ steps.prep.outputs.image }}:${{ steps.prep.outputs.short_sha1 }},quay.io/eclipse/${{ steps.prep.outputs.image }}:latest
-        push: true
-    - 
-      name: Send MM message
-      if: ${{ failure() }}
-      uses: mattermost/action-mattermost-notify@1.1.0
-      env:
-        MATTERMOST_WEBHOOK_URL: ${{ secrets.MATTERMOST_WEBHOOK_URL }}
-        MATTERMOST_CHANNEL: eclipse-che-ci
-        MATTERMOST_USERNAME: che-bot
-        
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Check existing tags
+        run: |
+          set +e
+          RECREATE_TAGS=${{ github.event.inputs.forceRecreateTags }}
+          VERSION=${{ github.event.inputs.version }}
+          EXISTING_TAG=$(git ls-remote --exit-code origin refs/tags/${VERSION})
+          if [[ -n ${EXISTING_TAG} ]]; then
+            if [[ ${RECREATE_TAGS} == "true" ]]; then
+              echo "[INFO] Removing tag for ${VERSION} version. New tag will be recreated during release."
+              git push origin :$VERSION
+            else
+              echo "[ERROR] Cannot proceed with release - tag ${EXISTING_TAG} already exists."
+              exit 1
+            fi
+          else
+            echo "[INFO] No existing tags detected for $VERSION"
+          fi
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Docker quay.io Login
+        uses: docker/login-action@v2
+        with:
+          registry: quay.io
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_PASSWORD }}
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+      - name: Install yq
+        run: |
+          python -m pip install --upgrade pip
+          pip install yq
+      - name: Set up Go 1.18
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.18
+      - name: Release operator
+        run: |
+          RELEASE_VERSION=${{ github.event.inputs.version }}
+          echo "RELEASE_VERSION=${RELEASE_VERSION}"
+          BRANCH=${RELEASE_VERSION%.*}.x
+          echo "BRANCH=${BRANCH}"
+          hub version
+          git config --global user.name "Anatolii Bazko"
+          git config --global user.email "abazko@redhat.com"
+          export GITHUB_TOKEN=${{ secrets.CHE_BOT_GITHUB_TOKEN }}
+          
+          set -e
+
+          if [[ ${{ github.event.inputs.forceRecreateTags }} == "true" ]]; then force_update="--force"; fi
+          ./make-release.sh ${RELEASE_VERSION} ${force_update} \
+            --release \
+            --release-olm-files \
+            --release-olm-bundle \
+            --push-git-changes \
+            --pull-requests 

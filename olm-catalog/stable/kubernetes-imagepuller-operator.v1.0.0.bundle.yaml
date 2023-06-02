@@ -1,0 +1,33 @@
+#
+# Copyright (c) 2019-2023 Red Hat, Inc.
+# This program and the accompanying materials are made
+# available under the terms of the Eclipse Public License 2.0
+# which is available at https://www.eclipse.org/legal/epl-2.0/
+#
+# SPDX-License-Identifier: EPL-2.0
+#
+# Contributors:
+#   Red Hat, Inc. - initial API and implementation
+#
+
+schema: olm.bundle
+name: kubernetes-imagepuller-operator.v1.0.0
+package: kubernetes-imagepuller-operator
+image: quay.io/openshift-community-operators/kubernetes-imagepuller-operator@sha256:ce395779113106c187aaa2c10254fab12121e108800f9f34c991b0434679d400
+properties:
+  - type: olm.gvk
+    value:
+      group: che.eclipse.org
+      kind: KubernetesImagePuller
+      version: v1alpha1
+  - type: olm.package
+    value:
+      packageName: kubernetes-imagepuller-operator
+      version: 1.0.0
+relatedImages:
+  - name: ''
+    image: gcr.io/kubebuilder/kube-rbac-proxy:v0.8.0
+  - name: ''
+    image: quay.io/eclipse/kubernetes-image-puller-operator:1.0.0
+  - name: ''
+    image: quay.io/openshift-community-operators/kubernetes-imagepuller-operator@sha256:ce395779113106c187aaa2c10254fab12121e108800f9f34c991b0434679d400

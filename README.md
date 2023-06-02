@@ -7,7 +7,10 @@
 
 An operator to install, configure, and manage a [kubernetes-image-puller](https://github.com/che-incubator/kubernetes-image-puller) deployment.
 
-The kubernetes-image-puller creates daemonsets that will run a list of images on a cluster, allowing Eclipse Che to start workspaces faster, because those images have been pre-pulled.  For more information about the kubernetes-image-puller, consult the kubernetes-image-puller [README](https://github.com/che-incubator/kubernetes-image-puller/blob/master/README.md).
+The kubernetes-image-puller creates daemonsets that will run a list of images on a cluster, 
+allowing Eclipse Che to start workspaces faster, because those images have been pre-pulled.  
+For more information about the kubernetes-image-puller, consult the kubernetes-image-puller 
+[README](https://github.com/che-incubator/kubernetes-image-puller/blob/master/README.md).
 
 The operator provides a `KubernetesImagePuller` custom resource definition (CRD) to install and configure a kubernetes-image-puller instance.
 
@@ -47,19 +50,10 @@ $ kubect apply -f <CR-YAML-FILE>.yaml -n <IMAGE-PULLER-NAMESPACE>
 
 #### Installing Manually
 
-Clone this project, checkout to desired release tag.
-
-For version <= v0.0.9 use installation commands:
+Clone this project, checkout to desired release tag and type in the terminal:
 
 ```bash
-kubectl apply -f deploy/ -n <NAMESPACE>
-kubectl apply -f deploy/crds/ -n <NAMESPACE>
-```
-
-For version >= v0.0.10 type in the terminal:
-
-``` bash
-$ make deploy -s
+$ make deploy
 ```
 
 Customize custom resource yaml and apply it:
@@ -68,17 +62,10 @@ Customize custom resource yaml and apply it:
 $ kubectl apply -f config/samples/che_v1alpha1_kubernetesimagepuller.yaml -n kubernetes-image-puller-operator
 ```
 
-To uninstall operator with version <= v0.0.9 use commands:
+To uninstall operator use commands:
 
 ```bash
-kubectl delete -f deploy/ -n <NAMESPACE>
-kubectl delete -f deploy/crds/ -n <NAMESPACE>
-```
-
-To uninstall operator with version >= 0.0.10 use command:
-
-```bash
-make undeploy -s
+$ make undeploy
 ```
 
 ### Set up Prometheus from scratch on the Kubernetes cluster and provide metrics
@@ -137,35 +124,19 @@ Click `Execute` button. Metrics logs should appear in the "Table" tab. Also you 
 
 #### Prequisites
 * Go >=`1.15`
-* Operator SDK `v1.7.1` (recommended)
-
-To build custom development images set up env variables:
-
-```bash
-$ export IMAGE_REGISTRY_USER_NAME=<IMAGE_REGISTRY_USER_NAME> && \
-  export IMAGE_REGISTRY_HOST=<IMAGE_REGISTRY_HOST>
-```
-
-Where:
-- `IMAGE_REGISTRY_USER_NAME` - docker image registry account name.
-- `IMAGE_REGISTRY_HOST` - docker image registry hostname, for example: "docker.io", "quay.io".
-
-> Warning: if you are using quay.io, for all new images you need to go to the image web page and make image publicity,
-otherwise you will face with error pull issue.
-
-> Notice: you can store this env variables into the ${HOME}/.bashrc file.
+* Operator SDK `v1.9.2`
 
 #### Check code compilation
 
-Run VSCode task `Compile code` or use the terminal:
+Run the VSCode task `Compile code` or use the terminal:
 
 ```bash
-$ make compile -s
+$ make compile
 ```
 
 #### Unit testing
 
-Run VSCode task `Run unit tests` or use the terminal:
+Run the VSCode task `Run unit tests` or use the terminal:
 
 ```bash
 $ make test
@@ -173,98 +144,61 @@ $ make test
 
 #### Format code
 
-Run VSCode task `Format code` or use the terminal:
+Run the VSCode task `Format code` or use the terminal:
 
 ```bash
-$ go fmt ./...
+$ make fmt
 ```
 
 #### Update golang dependencies
 
-This project uses Go modules and doesn't use vendor folder. Run the VSCode task: `Update dependencies` or use the terminal:
+This project uses Go modules and doesn't use a vendor folder. Run the VSCode task: `Update dependencies` or use the terminal:
 
 ```bash
 $ go mod tidy
 ```
 
-#### Building custom operator image
-
-Run VSCode task `Build and push custom operator image: '${IMAGE_REGISTRY_HOST}/${IMAGE_REGISTRY_USER_NAME}/kubernetes-image-puller-operator:next'` or use the terminal:
+#### Update Kubernetes resources
 
 ```bash
-$ make docker-build docker-push IMG="${IMAGE_REGISTRY_HOST}/${IMAGE_REGISTRY_USER_NAME}/kubernetes-image-puller-operator:next"
+$ make bundle
+```
+
+#### Building custom operator image
+
+```bash
+$ make docker-build docker-push IMG=<CUSTOM_IMAGE>
 ```
 
 #### Installing using make
 
-Build and push custom operator image if you modified source code.
-Run VSCode task `Deploy operator` or use the terminal:
-
 ```bash
-$ make deploy IMG="${IMAGE_REGISTRY_HOST}/${IMAGE_REGISTRY_USER_NAME}/kubernetes-image-puller-operator:next" -s
-$ kubectl apply -f config/samples/che_v1alpha1_kubernetesimagepuller.yaml -n <NAMESPACE>
+$ make docker-build docker-push IMG=<CUSTOM_IMAGE>
+$ make deploy IMG=<CUSTOM_IMAGE>
+$ kubectl apply -f config/samples/che_v1alpha1_kubernetesimagepuller.yaml -n kubernetes-image-puller-operator
 ```
 
-To uninstall operator run VSCode task `Undeploy operator`
+To uninstall the operator:
 
 ```bash
-$ make undeploy -s
+$ make undeploy
 ```
 
-#### Installing using operator-sdk and OLM
-
-Build and push custom operator image if you modified source code. 
-Build new OLM bundle image using VSCode task `Build and push development bundle` or use the terminal:
+#### Installing using OLM
 
 ```bash
-$ export BUNDLE_IMG="${IMAGE_REGISTRY_HOST}/${IMAGE_REGISTRY_USER_NAME}/kubernetes-image-puller-operator-bundle:next"
-$ export IMG="${IMAGE_REGISTRY_HOST}/${IMAGE_REGISTRY_USER_NAME}/kubernetes-image-puller-operator:next"
-$ make bundle IMG=${IMG} -s
-$ make bundle-build bundle-push -s BUNDLE_IMG=${BUNDLE_IMG}
-```
-
-To install operator run VSCode task `Install operator via OLM` or use the terminal:
-
-```bash
-$ operator-sdk run bundle ${BUNDLE_IMG} --namespace <NAMESPACE>
-$ kubectl apply -f config/samples/che_v1alpha1_kubernetesimagepuller.yaml -n <NAMESPACE>
-```
-
-To uninstall operator run VSCode task `UnInstall operator via OLM` or use the terminal:
-
-```bash
-$ operator-sdk cleanup kubernetes-imagepuller-operator --namespace <NAMESPACE>
-```
-
-#### Update CR/CRD
-
-Run VSCode task `Update CR/CRDs` or use the terminal:
-
-```bash
-$ make generate manifests -s
-```
-
-#### Update OLM bundle
-
-Run VSCode task `Update OLM bundle` or use the terminal:
-
-```bash
-$ make bundle -s
+$ make bundle
+$ bundle/test-bundle.sh
+$ kubectl apply -f config/samples/che_v1alpha1_kubernetesimagepuller.yaml -n kubernetes-image-puller-operator
 ```
 
 #### Releasing a new version of the operator to OperatorHub
 
-A quirk of this project is that while the repository is named `kubernetes-image-puller-operator`, the operator bundle on OperatorHub is named `kubernetes-imagepuller-operator`.  This was caused by the previous version of OLM deployment that required a Quay.io Application.  
+A quirk of this project is that while the repository is named `kubernetes-image-puller-operator`, 
+the operator bundle on OperatorHub is named `kubernetes-imagepuller-operator`.  
+his was caused by the previous version of OLM deployment that required a Quay.io Application.  
 
-Make release bundle:
-
-```bash
-$ make release-bundle -s RELEASE_VERSION=0.0.10
-```
-
-This command will convert OLM bundle(from `bundle` folder) to the package manifest with newer release
-version and put it to the directory `deploy/olm-catalog/kubernetes-imagepuller-operator/VERSION`.
-You now have a new version of the CSV and CRD, and can open a PR to `kubernetes-image-puller-operator` to keep everything in sync.
+Run `Release Kubernetes Image Puller operator` GitHub action to release a new bundle.
 
 Then, to see these changes on OperatorHub:
 1. Clone the [`community-operators`](https://github.com/k8s-operatorhub/community-operators) and [`community-operators-prod`](https://github.com/redhat-openshift-ecosystem/community-operators-prod/) repositories.
