@@ -31,14 +31,14 @@ metadata:
     capabilities: Seamless Upgrades
     categories: Developer Tools
     certified: "false"
-    containerImage: quay.io/eclipse/kubernetes-image-puller-operator:1.0.5
+    containerImage: quay.io/eclipse/kubernetes-image-puller-operator:1.0.4
     createdAt: ""
     description: Create and manage kubernetes-image-puller instances.
     operators.operatorframework.io/builder: operator-sdk-v1.9.0+git
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
     repository: https://github.com/che-incubator/kubernetes-image-puller-operator
     support: ""
-  name: kubernetes-imagepuller-operator.v1.0.5
+  name: kubernetes-imagepuller-operator.v1.0.4
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -128,7 +128,7 @@ spec:
                             fieldPath: metadata.name
                       - name: OPERATOR_NAME
                         value: kubernetes-image-puller-operator
-                    image: quay.io/eclipse/kubernetes-image-puller-operator:1.0.5
+                    image: quay.io/eclipse/kubernetes-image-puller-operator:1.0.4
                     imagePullPolicy: Always
                     livenessProbe:
                       httpGet:
@@ -293,4 +293,4 @@ spec:
   selector:
     matchLabels:
       app: kubernetes-image-puller-operator
-  version: 1.0.5
+  version: 1.0.4
