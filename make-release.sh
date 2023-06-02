@@ -185,6 +185,12 @@ createPRToMainBranch() {
 }
 
 prepareCommunityOperatorsUpdates() {
+  echo "[INFO] Copy bundle into community-operators repository"
+  if [[ ! ${RELEASE_VERSION} = $(make bundle-version) ]]; then
+    echo "[ERROR] Release version ${RELEASE_VERSION} does not match bundle version $(make bundle-version)"
+    exit 1
+  fi
+
   BUNDLE_DIR=$(make bundle-path)
   KIP_DIR="${COMMUNITY_OPERATORS_REPOSITORY_DIR}/operators/kubernetes-imagepuller-operator/$(make bundle-version)"
 
