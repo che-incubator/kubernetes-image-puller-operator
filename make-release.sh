@@ -24,6 +24,8 @@ init() {
   FORCE_UPDATE=""
   CREATE_PULL_REQUESTS=false
   GIT_REMOTE_UPSTREAM="https://github.com/che-incubator/kubernetes-image-puller-operator.git"
+  PREPARE_COMMUNITY_OPERATORS_UPDATES=false
+  COMMUNITY_OPERATORS_REPOSITORY_DIR=""
 
   if [[ $# -lt 1 ]]; then usage; exit; fi
 
@@ -35,6 +37,8 @@ init() {
       '--push-git-changes') PUSH_GIT_CHANGES=true; shift 0;;
       '--force') FORCE_UPDATE="--force"; shift 0;;
       '--pull-requests') CREATE_PULL_REQUESTS=true; shift 0;;
+      '--prepare-community-operators-update') PREPARE_COMMUNITY_OPERATORS_UPDATES=true; shift 0;;
+      '--community-operators-repository-dir') COMMUNITY_OPERATORS_REPOSITORY_DIR=$2; shift 1;;
     '--help'|'-h') usage; exit;;
     esac
     shift 1
@@ -43,6 +47,7 @@ init() {
 
 usage () {
   echo "Usage:   $0 [RELEASE_VERSION] --release --release-olm-files --release-olm-bundle --push-git-changes --pull-requests"
+  echo "Usage:   $0 [RELEASE_VERSION] --prepare-community-operators-update --community-operators-repository-dir <DIR>"
 }
 
 resetChanges() {
@@ -97,6 +102,7 @@ releaseOlmFiles() {
 
   yq -riY '.metadata.name = "'${PACKAGE}'.v'${RELEASE_VERSION}'"' ${CSV_PATH}
   yq -riY '.spec.version = "'${RELEASE_VERSION}'"' ${CSV_PATH}
+  yq -riY '.spec.replaces = "'${PACKAGE}'.v'${CURRENT_VERSION}'"' ${CSV_PATH}
 
   make license "$(make bundle-path)"
 
@@ -178,6 +184,18 @@ createPRToMainBranch() {
   set -e
 }
 
+prepareCommunityOperatorsUpdates() {
+  BUNDLE_DIR=$(make bundle-path)
+  KIP_DIR="${COMMUNITY_OPERATORS_REPOSITORY_DIR}/operators/kubernetes-imagepuller-operator/$(make bundle-version)"
+
+  mkdir "$KIP_DIR"
+  cp -r "${BUNDLE_DIR}/manifests" "${KIP_DIR}"
+  cp -r "${BUNDLE_DIR}/metadata" "${KIP_DIR}"
+
+  mv "${KIP_DIR}/manifests/$(make bundle-package).clusterserviceversion.yaml" \
+     "${KIP_DIR}/manifests/$(make bundle-package).v$(make bundle-version).clusterserviceversion.yaml"
+}
+
 run() {
   runUnitTests
   checkoutToReleaseBranch
@@ -205,4 +223,8 @@ fi
 
 if [[ $CREATE_PULL_REQUESTS == "true" ]]; then
   createPRToMainBranch
+fi
+
+if [[ $PREPARE_COMMUNITY_OPERATORS_UPDATES == "true" ]]; then
+  prepareCommunityOperatorsUpdates
 fi
