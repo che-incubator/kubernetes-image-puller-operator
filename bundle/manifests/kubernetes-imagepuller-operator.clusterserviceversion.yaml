@@ -31,14 +31,14 @@ metadata:
     capabilities: Seamless Upgrades
     categories: Developer Tools
     certified: "false"
-    containerImage: quay.io/eclipse/kubernetes-image-puller-operator:1.0.5
+    containerImage: quay.io/eclipse/kubernetes-image-puller-operator:1.0.4
     createdAt: ""
     description: Create and manage kubernetes-image-puller instances.
     operators.operatorframework.io/builder: operator-sdk-v1.9.0+git
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
     repository: https://github.com/che-incubator/kubernetes-image-puller-operator
     support: ""
-  name: kubernetes-imagepuller-operator.v1.0.5
+  name: kubernetes-imagepuller-operator.v1.0.4
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -49,6 +49,49 @@ spec:
         displayName: Kubernetes Image Puller
         kind: KubernetesImagePuller
         name: kubernetesimagepullers.che.eclipse.org
+        resources:
+          - kind: ConfigMap
+            name: ""
+            version: v1
+          - kind: DaemonSet
+            name: ""
+            version: apps/v1
+          - kind: Deployment
+            name: ""
+            version: apps/v1
+        specDescriptors:
+          - displayName: Affinity
+            path: affinity
+          - displayName: Caching CPU limit
+            path: cachingCPULimit
+          - displayName: Caching CPU request
+            path: cachingCPURequest
+          - displayName: Caching internal hours
+            path: cachingIntervalHours
+          - displayName: Cache memory limit
+            path: cachingMemoryLimit
+          - displayName: Caching memory request
+            path: cachingMemoryRequest
+          - displayName: ConfigMap name
+            path: configMapName
+          - displayName: DaemonSet name
+            path: daemonsetName
+          - displayName: Deployment name
+            path: deploymentName
+          - displayName: ImagePull secrets
+            path: imagePullSecrets
+          - displayName: ImagePull name
+            path: imagePullerImage
+          - displayName: Images to pull
+            path: images
+          - displayName: NodeSelector
+            path: nodeSelector
+        statusDescriptors:
+          - description: KubernetesImagePuller image in use.
+            displayName: Image
+            path: imagePullerImage
+            x-descriptors:
+              - urn:alm:descriptor:text
         version: v1alpha1
   description: "## About the managed application\n\nCreate a `KubernetesImagePuller`\
     \ custom resource to automatically configure and run an instance of the [kubernetes-image-puller.](https://github.com/che-incubator/kubernetes-image-puller)\n\
@@ -128,7 +171,7 @@ spec:
                             fieldPath: metadata.name
                       - name: OPERATOR_NAME
                         value: kubernetes-image-puller-operator
-                    image: quay.io/eclipse/kubernetes-image-puller-operator:1.0.5
+                    image: quay.io/eclipse/kubernetes-image-puller-operator:1.0.4
                     imagePullPolicy: Always
                     livenessProbe:
                       httpGet:
@@ -293,5 +336,4 @@ spec:
   selector:
     matchLabels:
       app: kubernetes-image-puller-operator
-  version: 1.0.5
-  replaces: kubernetes-imagepuller-operator.v1.0.4
+  version: 1.0.4

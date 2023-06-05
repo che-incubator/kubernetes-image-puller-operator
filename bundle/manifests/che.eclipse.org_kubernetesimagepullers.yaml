@@ -79,6 +79,7 @@ spec:
               KubernetesImagePuller
             properties:
               imagePullerImage:
+                description: KubernetesImagePuller image in use.
                 type: string
             type: object
         type: object
