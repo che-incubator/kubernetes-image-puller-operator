@@ -197,6 +197,7 @@ prepareCommunityOperatorsUpdates() {
   mkdir "$KIP_DIR"
   cp -r "${BUNDLE_DIR}/manifests" "${KIP_DIR}"
   cp -r "${BUNDLE_DIR}/metadata" "${KIP_DIR}"
+  cp -r "${BUNDLE_DIR}/tests" "${KIP_DIR}"
 
   mv "${KIP_DIR}/manifests/$(make bundle-package).clusterserviceversion.yaml" \
      "${KIP_DIR}/manifests/$(make bundle-package).v$(make bundle-version).clusterserviceversion.yaml"
