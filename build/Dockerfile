@@ -37,7 +37,7 @@ RUN make test
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o manager main.go
 
 # https://access.redhat.com/containers/?tab=tags#/registry.access.redhat.com/ubi8-minimal
-FROM registry.access.redhat.com/ubi8-minimal:8.8-860
+FROM registry.access.redhat.com/ubi8-minimal:8.8-1014
 
 ENV OPERATOR=/manager \
     USER_UID=1001 \
