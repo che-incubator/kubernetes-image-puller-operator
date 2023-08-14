@@ -11,7 +11,7 @@
 
 # Build the manager binary
 # https://access.redhat.com/containers/?tab=tags#/registry.access.redhat.com/ubi8/go-toolset
-FROM registry.access.redhat.com/ubi8/go-toolset:1.19.10-3 as builder
+FROM registry.access.redhat.com/ubi8/go-toolset:1.19.10-10 as builder
 ENV GOPATH=/go/
 USER root
 
@@ -37,7 +37,7 @@ RUN make test
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o manager main.go
 
 # https://access.redhat.com/containers/?tab=tags#/registry.access.redhat.com/ubi8-minimal
-FROM registry.access.redhat.com/ubi8-minimal:8.8-1014
+FROM registry.access.redhat.com/ubi8-minimal:8.8-1037
 
 ENV OPERATOR=/manager \
     USER_UID=1001 \
