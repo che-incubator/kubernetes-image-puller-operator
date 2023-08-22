@@ -51,7 +51,7 @@ func DefaultImagePullerConfigMap(namespace string, name string) *corev1.ConfigMa
 			"IMAGES":                 "java11-maven=quay.io/eclipse/che-java11-maven:next;che-theia=quay.io/eclipse/che-theia:next;java-plugin-runner=eclipse/che-remote-plugin-runner-java8:latest",
 			"CACHING_INTERVAL_HOURS": "1",
 			"CACHING_MEMORY_REQUEST": "10Mi",
-			"CACHING_MEMORY_LIMIT":   "20Mi",
+			"CACHING_MEMORY_LIMIT":   "30Mi",
 			"CACHING_CPU_REQUEST":    ".05",
 			"CACHING_CPU_LIMIT":      ".2",
 			"NODE_SELECTOR":          "{}",
