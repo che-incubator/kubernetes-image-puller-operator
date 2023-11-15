@@ -13,59 +13,57 @@
 package v1alpha1
 
 import (
-	"k8s.io/apimachinery/pkg/runtime"
+	"context"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	ctrl "sigs.k8s.io/controller-runtime"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
+
+	authorizationv1 "k8s.io/api/authorization/v1"
+	authorizationv1Client "k8s.io/client-go/kubernetes/typed/authorization/v1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
-// log is for logging in this package.
-var kubernetesimagepullerlog = logf.Log.WithName("kubernetesimagepuller-resource")
-
 func (r *KubernetesImagePuller) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(r).
-		Complete()
-}
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
+	authClient, err := authorizationv1Client.NewForConfig(mgr.GetConfig())
+	if err != nil {
+		return err
+	}
 
-//+kubebuilder:webhook:path=/mutate-che-eclipse-org-v1alpha1-kubernetesimagepuller,mutating=true,failurePolicy=fail,sideEffects=None,groups=che.eclipse.org,resources=kubernetesimagepullers,verbs=create;update,versions=v1alpha1,name=mkubernetesimagepuller.kb.io,admissionReviewVersions={v1,v1beta1}
-
-var _ webhook.Defaulter = &KubernetesImagePuller{}
-
-// Default implements webhook.Defaulter so a webhook will be registered for the type
-func (r *KubernetesImagePuller) Default() {
-	kubernetesimagepullerlog.Info("default", "name", r.Name)
-
-	// TODO(user): fill in your defaulting logic.
-}
-
-// TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.
-//+kubebuilder:webhook:path=/validate-che-eclipse-org-v1alpha1-kubernetesimagepuller,mutating=false,failurePolicy=fail,sideEffects=None,groups=che.eclipse.org,resources=kubernetesimagepullers,verbs=create;update,versions=v1alpha1,name=vkubernetesimagepuller.kb.io,admissionReviewVersions={v1,v1beta1}
-
-var _ webhook.Validator = &KubernetesImagePuller{}
-
-// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *KubernetesImagePuller) ValidateCreate() error {
-	kubernetesimagepullerlog.Info("validate create", "name", r.Name)
-
-	// TODO(user): fill in your validation logic upon object creation.
+	mgr.GetWebhookServer().Register("/validate-che-eclipse-org-v1alpha1-kubernetesimagepuller", &webhook.Admission{Handler: &validationHandler{subjectAccessReviews: authClient.SubjectAccessReviews()}})
 	return nil
 }
 
-// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *KubernetesImagePuller) ValidateUpdate(old runtime.Object) error {
-	kubernetesimagepullerlog.Info("validate update", "name", r.Name)
+// +kubebuilder:webhook:path=/validate-che-eclipse-org-v1alpha1-kubernetesimagepuller,mutating=false,failurePolicy=fail,sideEffects=None,groups=che.eclipse.org,resources=kubernetesimagepullers,verbs=create,versions=v1alpha1,name=vkubernetesimagepuller.kb.io,admissionReviewVersions={v1,v1beta1}
 
-	// TODO(user): fill in your validation logic upon object update.
-	return nil
+type validationHandler struct {
+	subjectAccessReviews authorizationv1Client.SubjectAccessReviewInterface
 }
 
-// ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *KubernetesImagePuller) ValidateDelete() error {
-	kubernetesimagepullerlog.Info("validate delete", "name", r.Name)
+func (v *validationHandler) Handle(ctx context.Context, req webhook.AdmissionRequest) webhook.AdmissionResponse {
+	resourceAttributes := &authorizationv1.ResourceAttributes{
+		Namespace: req.Namespace,
+		Group:     "apps",
+		Version:   "*",
+		Verb:      "create",
+		Resource:  "daemonsets",
+	}
 
-	// TODO(user): fill in your validation logic upon object deletion.
-	return nil
+	subjectAccessReview := &authorizationv1.SubjectAccessReview{
+		Spec: authorizationv1.SubjectAccessReviewSpec{
+			ResourceAttributes: resourceAttributes,
+			User:               req.UserInfo.Username,
+			UID:                req.UserInfo.UID,
+			Groups:             req.UserInfo.Groups,
+		},
+	}
+
+	resp, _ := v.subjectAccessReviews.Create(ctx, subjectAccessReview, metav1.CreateOptions{})
+
+	if !resp.Status.Allowed {
+		return webhook.Denied("User \"" + req.UserInfo.Username + "\" not allowed to create daemonsets")
+	}
+
+	return webhook.Allowed("User \"" + req.UserInfo.Username + "\" allowed to create daemonsets")
 }
