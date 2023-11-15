@@ -13,59 +13,34 @@
 package v1alpha1
 
 import (
-	"k8s.io/apimachinery/pkg/runtime"
+	"context"
+
 	ctrl "sigs.k8s.io/controller-runtime"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
+
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
-// log is for logging in this package.
-var kubernetesimagepullerlog = logf.Log.WithName("kubernetesimagepuller-resource")
-
 func (r *KubernetesImagePuller) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(r).
-		Complete()
-}
-
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-
-//+kubebuilder:webhook:path=/mutate-che-eclipse-org-v1alpha1-kubernetesimagepuller,mutating=true,failurePolicy=fail,sideEffects=None,groups=che.eclipse.org,resources=kubernetesimagepullers,verbs=create;update,versions=v1alpha1,name=mkubernetesimagepuller.kb.io,admissionReviewVersions={v1,v1beta1}
-
-var _ webhook.Defaulter = &KubernetesImagePuller{}
-
-// Default implements webhook.Defaulter so a webhook will be registered for the type
-func (r *KubernetesImagePuller) Default() {
-	kubernetesimagepullerlog.Info("default", "name", r.Name)
-
-	// TODO(user): fill in your defaulting logic.
-}
-
-// TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.
-//+kubebuilder:webhook:path=/validate-che-eclipse-org-v1alpha1-kubernetesimagepuller,mutating=false,failurePolicy=fail,sideEffects=None,groups=che.eclipse.org,resources=kubernetesimagepullers,verbs=create;update,versions=v1alpha1,name=vkubernetesimagepuller.kb.io,admissionReviewVersions={v1,v1beta1}
-
-var _ webhook.Validator = &KubernetesImagePuller{}
-
-// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *KubernetesImagePuller) ValidateCreate() error {
-	kubernetesimagepullerlog.Info("validate create", "name", r.Name)
-
-	// TODO(user): fill in your validation logic upon object creation.
+	mgr.GetWebhookServer().Register("/validate-che-eclipse-org-v1alpha1-kubernetesimagepuller", &webhook.Admission{Handler: &validationHandler{k8sClient: mgr.GetClient()}})
 	return nil
 }
 
-// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *KubernetesImagePuller) ValidateUpdate(old runtime.Object) error {
-	kubernetesimagepullerlog.Info("validate update", "name", r.Name)
+// +kubebuilder:webhook:path=/validate-che-eclipse-org-v1alpha1-kubernetesimagepuller,mutating=false,failurePolicy=fail,sideEffects=None,groups=che.eclipse.org,resources=kubernetesimagepullers,verbs=create,versions=v1alpha1,name=vkubernetesimagepuller.kb.io,admissionReviewVersions={v1,v1beta1}
 
-	// TODO(user): fill in your validation logic upon object update.
-	return nil
+type validationHandler struct {
+	k8sClient client.Client
 }
 
-// ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *KubernetesImagePuller) ValidateDelete() error {
-	kubernetesimagepullerlog.Info("validate delete", "name", r.Name)
+func (v *validationHandler) Handle(ctx context.Context, req webhook.AdmissionRequest) webhook.AdmissionResponse {
+	imagePullers := &KubernetesImagePullerList{}
+	err := v.k8sClient.List(ctx, imagePullers, &client.ListOptions{Namespace: req.Namespace})
+	if err != nil {
+		return webhook.Denied(err.Error())
+	}
 
-	// TODO(user): fill in your validation logic upon object deletion.
-	return nil
+	if len(imagePullers.Items) > 0 {
+		return webhook.Denied("only one KubernetesImagePuller is allowed per namespace")
+	}
+	return webhook.Allowed("there are no KubernetesImagePuller resources in this namespace")
 }

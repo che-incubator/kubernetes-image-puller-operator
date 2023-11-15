@@ -17,6 +17,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net"
+	"net/http"
 	"path/filepath"
 	"testing"
 	"time"
@@ -26,6 +27,7 @@ import (
 
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	//+kubebuilder:scaffold:imports
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -121,6 +123,46 @@ var _ = BeforeSuite(func() {
 	}).Should(Succeed())
 
 }, 60)
+
+var _ = Describe("Create KubernetesImagePuller resource", func() {
+
+	var kip *KubernetesImagePuller
+
+	BeforeEach(func() {
+		kip = &KubernetesImagePuller{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-kip",
+				Namespace: "default",
+			},
+		}
+	})
+
+	It("Should create a KubernetesImagePuller resource", func() {
+		Expect(k8sClient.Create(ctx, kip)).Should(Succeed())
+		Expect(k8sClient.Delete(ctx, kip)).Should(Succeed())
+	})
+
+	It("Should not be able to create a second KubernetesImagePuller resource in the same namespace", func() {
+		secondKip := kip.DeepCopy()
+		secondKip.ObjectMeta.Name = secondKip.ObjectMeta.Name + "-different"
+
+		Expect(k8sClient.Create(ctx, kip)).Should(Succeed())
+		err := k8sClient.Create(ctx, secondKip)
+		Expect(err).To(HaveHTTPStatus(http.StatusForbidden))
+		Expect(k8sClient.Delete(ctx, kip)).Should(Succeed())
+	})
+
+	It("Should be able to create a second KubernetesImagePuller resource in a different namespace", func() {
+		secondKip := kip.DeepCopy()
+		secondKip.ObjectMeta.Name = secondKip.ObjectMeta.Name + "-different"
+		secondKip.ObjectMeta.Namespace = secondKip.ObjectMeta.Namespace + "-different"
+
+		Expect(k8sClient.Create(ctx, kip)).Should(Succeed())
+		Expect(k8sClient.Create(ctx, secondKip)).Should(Succeed())
+		Expect(k8sClient.Delete(ctx, kip)).Should(Succeed())
+		Expect(k8sClient.Delete(ctx, secondKip)).Should(Succeed())
+	})
+})
 
 var _ = AfterSuite(func() {
 	cancel()
