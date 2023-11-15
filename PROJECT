@@ -1,4 +1,4 @@
-domain: eclipse.che
+domain: eclipse.org
 layout:
 - go.kubebuilder.io/v3
 plugins:
