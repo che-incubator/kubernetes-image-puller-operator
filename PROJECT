@@ -16,4 +16,8 @@ resources:
   kind: KubernetesImagePuller
   path: github.com/che-incubator/kubernetes-image-puller-operator/api/v1alpha1
   version: v1alpha1
+  webhooks:
+    defaulting: true
+    validation: true
+    webhookVersion: v1
 version: "3"
