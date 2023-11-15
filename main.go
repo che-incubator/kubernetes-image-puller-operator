@@ -128,7 +128,7 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "KubernetesImagePuller")
 		os.Exit(1)
 	}
-	if err = (&chev1alpha1.KubernetesImagePuller{}).SetupWebhookWithManager(mgr); err != nil {
+	if err = (&orgv1alpha1.KubernetesImagePuller{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "KubernetesImagePuller")
 		os.Exit(1)
 	}
