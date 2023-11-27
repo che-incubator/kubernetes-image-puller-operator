@@ -169,7 +169,8 @@ bundle: generate manifests download-kustomize download-operator-sdk ## Generate 
 
 	CSV_PATH=$$($(MAKE) csv-path)
 	yq -riY '.metadata.annotations.containerImage = "'$(IMG)'"' $${CSV_PATH}
-	yq -riY '.spec.install.spec.deployments[0].spec.template.spec.containers[1].image = "'$(IMG)'"' $${CSV_PATH}
+	# Update container image for container 'kuebrnetes-image-puller-operator' in the list of deployments
+	yq -riY '.spec.install.spec.deployments[0].spec.template.spec.containers[] |= (select(.name == "kubernetes-image-puller-operator") .image |= "'$(IMG)'")' $${CSV_PATH}
 
 	# Copy bundle.Dockerfile to the bundle dir
  	# Update paths (since it is created in the root of the project) and labels
