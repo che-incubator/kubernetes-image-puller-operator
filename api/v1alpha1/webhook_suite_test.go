@@ -17,7 +17,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net"
-	"net/http"
 	"path/filepath"
 	"testing"
 	"time"
@@ -26,6 +25,8 @@ import (
 	. "github.com/onsi/gomega"
 
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
+	v1 "k8s.io/api/core/v1"
+
 	//+kubebuilder:scaffold:imports
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -78,6 +79,9 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	err = admissionv1beta1.AddToScheme(scheme)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = v1.AddToScheme(scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme
@@ -148,7 +152,7 @@ var _ = Describe("Create KubernetesImagePuller resource", func() {
 
 		Expect(k8sClient.Create(ctx, kip)).Should(Succeed())
 		err := k8sClient.Create(ctx, secondKip)
-		Expect(err).To(HaveHTTPStatus(http.StatusForbidden))
+		Expect(err.Error()).To(Equal("admission webhook \"vkubernetesimagepuller.kb.io\" denied the request: only one KubernetesImagePuller is allowed per namespace"))
 		Expect(k8sClient.Delete(ctx, kip)).Should(Succeed())
 	})
 
@@ -156,11 +160,17 @@ var _ = Describe("Create KubernetesImagePuller resource", func() {
 		secondKip := kip.DeepCopy()
 		secondKip.ObjectMeta.Name = secondKip.ObjectMeta.Name + "-different"
 		secondKip.ObjectMeta.Namespace = secondKip.ObjectMeta.Namespace + "-different"
-
+		newNamespace := &v1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: secondKip.ObjectMeta.Namespace,
+			},
+		}
+		Expect(k8sClient.Create(ctx, newNamespace)).Should(Succeed())
 		Expect(k8sClient.Create(ctx, kip)).Should(Succeed())
 		Expect(k8sClient.Create(ctx, secondKip)).Should(Succeed())
 		Expect(k8sClient.Delete(ctx, kip)).Should(Succeed())
 		Expect(k8sClient.Delete(ctx, secondKip)).Should(Succeed())
+		Expect(k8sClient.Delete(ctx, newNamespace)).Should(Succeed())
 	})
 })
 
