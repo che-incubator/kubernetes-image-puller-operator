@@ -11,8 +11,8 @@ webhooks:
   - v1beta1
   clientConfig:
     service:
-      name: webhook-service
-      namespace: system
+      name: service
+      namespace: kubernetes-image-puller-operator
       path: /validate-che-eclipse-org-v1alpha1-kubernetesimagepuller
   failurePolicy: Fail
   name: vkubernetesimagepuller.kb.io

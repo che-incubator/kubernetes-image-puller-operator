@@ -16,7 +16,7 @@ metadata:
   labels:
     name: kubernetes-image-puller-operator
   name: controller-manager-metrics-service
-  namespace: system
+  namespace: kubernetes-image-puller-operator
 spec:
   ports:
   - name: https

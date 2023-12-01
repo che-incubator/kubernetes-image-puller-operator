@@ -5,6 +5,22 @@
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
 VERSION ?= 1.0.6
 
+ifeq (,$(shell which kubectl)$(shell which oc))
+	$(error oc or kubectl is required to proceed)
+endif
+
+ifneq (,$(shell which kubectl))
+	K8S_CLI := kubectl
+else
+	K8S_CLI := oc
+endif
+
+ifeq ($(shell $(K8S_CLI) api-resources --api-group='route.openshift.io' 2>&1 | grep -o routes),routes)
+  PLATFORM := openshift
+else
+  PLATFORM := kubernetes
+endif
+
 # Add silent flag for all commands by default
 ifndef VERBOSE
 	MAKEFLAGS += --silent
@@ -94,13 +110,13 @@ run: manifests generate fmt vet ## Run a controller from your host.
 ##@ Development
 
 docker-build: ## Build docker image with the manager.
-	docker build --no-cache -t ${IMG} -f build/Dockerfile .
+	$(IMAGE_TOOL) build --no-cache -t ${IMG} -f build/Dockerfile .
 
 docker-push: ## Push docker image with the manager.
-	docker push ${IMG}
+	$(IMAGE_TOOL) push ${IMG}
 
 manifests: download-controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
-	$(CONTROLLER_GEN) crd:crdVersions=v1 rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+	$(CONTROLLER_GEN) crd:crdVersions=v1 rbac:roleName=manager-role paths="./..." output:crd:artifacts:config=config/crd/bases
 
 	# remove yaml delimitier, which makes OLM catalog source image broken.
 	sed -i '/---/d' "$(CHECLUSTER_CRD_PATH)"
@@ -129,15 +145,40 @@ install: manifests download-kustomize ## Install CRDs into the K8s cluster speci
 uninstall: manifests download-kustomize ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config.
 	$(KUSTOMIZE) build config/crd | kubectl delete -f -
 
-deploy: manifests download-kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
+deploy: manifests download-kustomize kustomize-operator-image gen-deployment ## Deploy controller to the K8s cluster specified in ~/.kube/config.	
+	$(K8S_CLI) apply -f deploy/deployment/$(PLATFORM)/combined.yaml
+
+undeploy: download-kustomize ## Undeploy controller from the K8s cluster specified in ~/.kube/config.
+	$(K8S_CLI) delete -f deploy/deployment/$(PLATFORM)/combined.yaml
+	
+# Set a new operator image for kustomize
+kustomize-operator-image: download-kustomize
 	cd "$(PROJECT_DIR)/config/manager"
 	$(KUSTOMIZE) edit set image quay.io/eclipse/kubernetes-image-puller-operator:next=$(IMG)
 	cd "$(PROJECT_DIR)"
 
-	$(KUSTOMIZE) build config/default | kubectl apply -f -
+DEPLOYMENT_DIR=$(PROJECT_DIR)/deploy/deployment
+gen-deployment:
+	rm -rf $(DEPLOYMENT_DIR)
+	for TARGET_PLATFORM in kubernetes openshift; do
+		PLATFORM_DIR=$(DEPLOYMENT_DIR)/$${TARGET_PLATFORM}
+		OBJECTS_DIR=$${PLATFORM_DIR}/objects
 
-undeploy: download-kustomize ## Undeploy controller from the K8s cluster specified in ~/.kube/config.
-	$(KUSTOMIZE) build config/default | kubectl delete -f -
+		mkdir -p $${OBJECTS_DIR}
+
+		COMBINED_FILENAME=$${PLATFORM_DIR}/combined.yaml
+		$(KUSTOMIZE) build config/$${TARGET_PLATFORM} | cat > $${COMBINED_FILENAME} -
+
+		# Split the giant files output by kustomize per-object
+		csplit -s -f "temp" --suppress-matched "$${COMBINED_FILENAME}" '/^---$$/' '{*}'
+		for file in temp??; do
+			name_kind=$$(yq -r '"\(.metadata.name).\(.kind)"' "$${file}")
+			mv "$${file}" "$${OBJECTS_DIR}/$${name_kind}.yaml"
+		done
+
+		echo "[INFO] Deployments resources generated into $${PLATFORM_DIR}"
+	done
+
 
 compile:
 	binary="$(BINARY)"

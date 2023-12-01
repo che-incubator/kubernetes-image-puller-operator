@@ -9,16 +9,10 @@
 # Contributors:
 #   Red Hat, Inc. - initial API and implementation
 #
-
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
+apiVersion: v1
+kind: Service
 metadata:
-  name: leader-election-rolebinding
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: leader-election-role
-subjects:
-- kind: ServiceAccount
-  name: $(CONTROLLER_SERVICE_ACCOUNT)
-  namespace: kubernates-image-puller-operator
+  name: service
+  namespace: kubernetes-image-puller-operator
+  annotations:
+    service.beta.openshift.io/serving-cert-secret-name: kubernetes-image-puller-operator-service-cert

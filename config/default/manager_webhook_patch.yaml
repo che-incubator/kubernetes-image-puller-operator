@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: kubernetes-image-puller-operator
+  name: manager
 spec:
   template:
     spec:
@@ -19,4 +19,4 @@ spec:
       - name: cert
         secret:
           defaultMode: 420
-          secretName: webhook-server-cert
+          secretName: kubernetes-image-puller-operator-service-cert

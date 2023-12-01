@@ -22,5 +22,5 @@ spec:
       clientConfig:
         service:
           namespace: system
-          name: webhook-service
+          name: service
           path: /convert
