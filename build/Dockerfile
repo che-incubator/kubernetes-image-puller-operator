@@ -31,6 +31,7 @@ COPY api/ api/
 COPY controllers/ controllers/
 COPY pkg/ pkg/
 COPY hack/ hack/
+COPY config/webhook/ config/webhook/
 
 # Test
 RUN if [[ ${SKIP_TESTS} == "false" ]]; then make test; fi

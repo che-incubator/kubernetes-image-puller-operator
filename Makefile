@@ -5,20 +5,8 @@
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
 VERSION ?= 1.0.6
 
-ifeq (,$(shell which kubectl)$(shell which oc))
-	$(error oc or kubectl is required to proceed)
-endif
-
-ifneq (,$(shell which kubectl))
-	K8S_CLI := kubectl
-else
-	K8S_CLI := oc
-endif
-
-ifeq ($(shell $(K8S_CLI) api-resources --api-group='route.openshift.io' 2>&1 | grep -o routes),routes)
-  PLATFORM := openshift
-else
-  PLATFORM := kubernetes
+ifneq (,$(shell which kubectl 2>/dev/null)$(shell which oc 2>/dev/null))
+	include build/make/deploy.mk
 endif
 
 # Add silent flag for all commands by default
@@ -26,7 +14,7 @@ ifndef VERBOSE
 	MAKEFLAGS += --silent
 endif
 
-PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
+PROJECT_DIR := $(shell dirname $(abspath $(firstword $(sort $(MAKEFILE_LIST)))))
 CHECLUSTER_CRD_PATH = "$(PROJECT_DIR)/config/crd/bases/che.eclipse.org_kubernetesimagepullers.yaml"
 
 # CHANNEL define the bundle package name
@@ -139,18 +127,6 @@ test: manifests generate fmt vet ## Run tests.
 	test -f ${ENVTEST_ASSETS_DIR}/setup-envtest.sh || curl -sSLo ${ENVTEST_ASSETS_DIR}/setup-envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/controller-runtime/v0.8.3/hack/setup-envtest.sh
 	source ${ENVTEST_ASSETS_DIR}/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR); setup_envtest_env $(ENVTEST_ASSETS_DIR); go test ./... -coverprofile cover.out
 
-install: manifests download-kustomize ## Install CRDs into the K8s cluster specified in ~/.kube/config.
-	$(KUSTOMIZE) build config/crd | kubectl apply -f -
-
-uninstall: manifests download-kustomize ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config.
-	$(KUSTOMIZE) build config/crd | kubectl delete -f -
-
-deploy: manifests download-kustomize kustomize-operator-image gen-deployment ## Deploy controller to the K8s cluster specified in ~/.kube/config.	
-	$(K8S_CLI) apply -f deploy/deployment/$(PLATFORM)/combined.yaml
-
-undeploy: download-kustomize ## Undeploy controller from the K8s cluster specified in ~/.kube/config.
-	$(K8S_CLI) delete -f deploy/deployment/$(PLATFORM)/combined.yaml
-	
 # Set a new operator image for kustomize
 kustomize-operator-image: download-kustomize
 	cd "$(PROJECT_DIR)/config/manager"
@@ -178,7 +154,6 @@ gen-deployment:
 
 		echo "[INFO] Deployments resources generated into $${PLATFORM_DIR}"
 	done
-
 
 compile:
 	binary="$(BINARY)"

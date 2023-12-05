@@ -19,4 +19,4 @@ spec:
       - name: cert
         secret:
           defaultMode: 420
-          secretName: kubernetes-image-puller-operator-service-cert
+          secretName: k8s-image-puller-operator-service-cert
