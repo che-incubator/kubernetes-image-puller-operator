@@ -14,7 +14,7 @@ ifndef VERBOSE
 	MAKEFLAGS += --silent
 endif
 
-PROJECT_DIR := $(shell dirname $(abspath $(firstword $(sort $(MAKEFILE_LIST)))))
+PROJECT_DIR := "$(shell pwd)"
 CHECLUSTER_CRD_PATH = "$(PROJECT_DIR)/config/crd/bases/che.eclipse.org_kubernetesimagepullers.yaml"
 
 # CHANNEL define the bundle package name
@@ -22,6 +22,9 @@ PACKAGE = kubernetes-imagepuller-operator
 
 # CHANNEL define the bundle channel
 CHANNEL = stable
+
+# DEPLOYMENT_DIR defines the directory where the deployment manifests are generated
+DEPLOYMENT_DIR=$(PROJECT_DIR)/deploy/deployment
 
 # IMAGE_TAG_BASE defines the docker.io namespace and part of the image name for remote images.
 # This variable is used to construct full image tags for bundle and catalog images.
@@ -133,7 +136,6 @@ kustomize-operator-image: download-kustomize
 	$(KUSTOMIZE) edit set image quay.io/eclipse/kubernetes-image-puller-operator:next=$(IMG)
 	cd "$(PROJECT_DIR)"
 
-DEPLOYMENT_DIR=$(PROJECT_DIR)/deploy/deployment
 gen-deployment:
 	rm -rf $(DEPLOYMENT_DIR)
 	for TARGET_PLATFORM in kubernetes openshift; do
