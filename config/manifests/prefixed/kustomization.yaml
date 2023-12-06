@@ -1,7 +1,7 @@
 # This has to be a separate kustomize file, since namePrefix below cannot be
 # disabled for specific types, and we need the CSV's .metadata.name to be unchanged
 
-namePrefix: k8s-image-puller-operator-
+namePrefix: kubernetes-image-puller-operator-
 
 bases:
 - ../../default

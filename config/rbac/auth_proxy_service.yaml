@@ -15,7 +15,7 @@ kind: Service
 metadata:
   labels:
     name: kubernetes-image-puller-operator
-  name: controller-manager-metrics-service
+  name: manager-metrics-service
   namespace: kubernetes-image-puller-operator
 spec:
   ports:

@@ -15,4 +15,4 @@ metadata:
   name: service
   namespace: kubernetes-image-puller-operator
   annotations:
-    service.beta.openshift.io/serving-cert-secret-name: k8s-image-puller-operator-service-cert
+    service.beta.openshift.io/serving-cert-secret-name: kubernetes-image-puller-operator-service-cert
