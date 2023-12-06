@@ -1,0 +1,7 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: kubernetes-image-puller-operator-selfsigned-issuer
+  namespace: kubernetes-image-puller-operator
+spec:
+  selfSigned: {}

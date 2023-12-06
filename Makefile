@@ -136,7 +136,7 @@ kustomize-operator-image: download-kustomize
 	$(KUSTOMIZE) edit set image quay.io/eclipse/kubernetes-image-puller-operator:next=$(IMG)
 	cd "$(PROJECT_DIR)"
 
-gen-deployment:
+gen-deployment: download-kustomize
 	rm -rf $(DEPLOYMENT_DIR)
 	for TARGET_PLATFORM in kubernetes openshift; do
 		PLATFORM_DIR=$(DEPLOYMENT_DIR)/$${TARGET_PLATFORM}

@@ -17,11 +17,11 @@ endif
 install: manifests download-kustomize ## Install CRDs into the K8s cluster specified in ~/.kube/config.
 	$(KUSTOMIZE) build config/crd | $(K8S_CLI) apply -f -
 
-uninstall: manifests download-kustomize ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config.
+uninstall: download-kustomize ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config.
 	$(KUSTOMIZE) build config/crd | $(K8S_CLI) delete -f -
 
-deploy: manifests download-kustomize kustomize-operator-image gen-deployment ## Deploy controller to the K8s cluster specified in ~/.kube/config.	
+deploy: manifests kustomize-operator-image gen-deployment ## Deploy controller to the K8s cluster specified in ~/.kube/config.	
 	$(K8S_CLI) apply -f $(DEPLOYMENT_DIR)/$(PLATFORM)/combined.yaml
 
-undeploy: download-kustomize ## Undeploy controller from the K8s cluster specified in ~/.kube/config.
+undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config.
 	$(K8S_CLI) delete -f $(DEPLOYMENT_DIR)/$(PLATFORM)/combined.yaml
