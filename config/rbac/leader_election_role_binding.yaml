@@ -21,4 +21,4 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: $(CONTROLLER_SERVICE_ACCOUNT)
-  namespace: kubernates-image-puller-operator
+  namespace: kubernetes-image-puller-operator
