@@ -14,4 +14,7 @@
 # used to generate the 'manifests/' directory in a bundle.
 
 resources:
-- bases/kubernetes-image-puller-operator.clusterserviceversion.yaml
+- ../../manifests
+- ../../samples
+- ../../scorecard
+- prefixed

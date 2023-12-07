@@ -14,7 +14,7 @@ ifndef VERBOSE
 	MAKEFLAGS += --silent
 endif
 
-PROJECT_DIR := "$(shell pwd)"
+PROJECT_DIR := $(shell pwd)
 CHECLUSTER_CRD_PATH = "$(PROJECT_DIR)/config/crd/bases/che.eclipse.org_kubernetesimagepullers.yaml"
 
 # CHANNEL define the bundle package name
@@ -176,7 +176,7 @@ bundle: generate manifests download-kustomize download-operator-sdk ## Generate 
 
 	BUNDLE_PATH=$$($(MAKE) bundle-path)
 
-	$(KUSTOMIZE) build config/manifests | \
+	$(KUSTOMIZE) build config/openshift/olm | \
 	$(OPERATOR_SDK) generate bundle \
 	--quiet \
 	--overwrite \

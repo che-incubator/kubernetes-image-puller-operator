@@ -4,7 +4,7 @@
 namePrefix: kubernetes-image-puller-operator-
 
 bases:
-- ../../default
+- ../../../default
 
 # These patches remove the unnecessary "cert" volume and its manager container volumeMount.
 patchesJson6902:
