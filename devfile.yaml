@@ -1,4 +1,4 @@
-schemaVersion: 2.2.0
+schemaVersion: 2.2.2
 metadata:
   generateName: kubernetes-image-puller-operator
 components:
