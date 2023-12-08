@@ -12,7 +12,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: service
+  name: manager-service
   namespace: kubernetes-image-puller-operator
   annotations:
     service.beta.openshift.io/serving-cert-secret-name: kubernetes-image-puller-operator-service-cert

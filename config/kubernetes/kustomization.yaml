@@ -40,11 +40,11 @@ vars:
   objref:
     kind: Service
     version: v1
-    name: kubernetes-image-puller-operator-service
+    name: kubernetes-image-puller-operator-manager-service
   fieldref:
     fieldpath: metadata.namespace
 - name: SERVICE_NAME
   objref:
     kind: Service
     version: v1
-    name: kubernetes-image-puller-operator-service
+    name: kubernetes-image-puller-operator-manager-service
