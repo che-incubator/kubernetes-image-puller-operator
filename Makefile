@@ -5,12 +5,16 @@
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
 VERSION ?= 1.0.6
 
+ifneq (,$(shell which kubectl 2>/dev/null)$(shell which oc 2>/dev/null))
+	include build/make/deploy.mk
+endif
+
 # Add silent flag for all commands by default
 ifndef VERBOSE
 	MAKEFLAGS += --silent
 endif
 
-PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
+PROJECT_DIR := $(shell pwd)
 CHECLUSTER_CRD_PATH = "$(PROJECT_DIR)/config/crd/bases/che.eclipse.org_kubernetesimagepullers.yaml"
 
 # CHANNEL define the bundle package name
@@ -18,6 +22,9 @@ PACKAGE = kubernetes-imagepuller-operator
 
 # CHANNEL define the bundle channel
 CHANNEL = stable
+
+# DEPLOYMENT_DIR defines the directory where the deployment manifests are generated
+DEPLOYMENT_DIR=$(PROJECT_DIR)/deploy/deployment
 
 # IMAGE_TAG_BASE defines the docker.io namespace and part of the image name for remote images.
 # This variable is used to construct full image tags for bundle and catalog images.
@@ -94,13 +101,13 @@ run: manifests generate fmt vet ## Run a controller from your host.
 ##@ Development
 
 docker-build: ## Build docker image with the manager.
-	docker build --no-cache -t ${IMG} -f build/Dockerfile .
+	$(IMAGE_TOOL) build --no-cache -t ${IMG} -f build/Dockerfile .
 
 docker-push: ## Push docker image with the manager.
-	docker push ${IMG}
+	$(IMAGE_TOOL) push ${IMG}
 
 manifests: download-controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
-	$(CONTROLLER_GEN) crd:crdVersions=v1 rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+	$(CONTROLLER_GEN) crd:crdVersions=v1 rbac:roleName=manager-role paths="./..." output:crd:artifacts:config=config/crd/bases
 
 	# remove yaml delimitier, which makes OLM catalog source image broken.
 	sed -i '/---/d' "$(CHECLUSTER_CRD_PATH)"
@@ -117,26 +124,38 @@ vet: ## Run go vet against code.
 	go vet ./...
 
 ENVTEST_ASSETS_DIR=$(shell pwd)/testbin
+test: SHELL := /bin/bash
 test: manifests generate fmt vet ## Run tests.
 	mkdir -p ${ENVTEST_ASSETS_DIR}
 	test -f ${ENVTEST_ASSETS_DIR}/setup-envtest.sh || curl -sSLo ${ENVTEST_ASSETS_DIR}/setup-envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/controller-runtime/v0.8.3/hack/setup-envtest.sh
 	source ${ENVTEST_ASSETS_DIR}/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR); setup_envtest_env $(ENVTEST_ASSETS_DIR); go test ./... -coverprofile cover.out
 
-install: manifests download-kustomize ## Install CRDs into the K8s cluster specified in ~/.kube/config.
-	$(KUSTOMIZE) build config/crd | kubectl apply -f -
-
-uninstall: manifests download-kustomize ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config.
-	$(KUSTOMIZE) build config/crd | kubectl delete -f -
-
-deploy: manifests download-kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
+# Set a new operator image for kustomize
+kustomize-operator-image: download-kustomize
 	cd "$(PROJECT_DIR)/config/manager"
 	$(KUSTOMIZE) edit set image quay.io/eclipse/kubernetes-image-puller-operator:next=$(IMG)
 	cd "$(PROJECT_DIR)"
 
-	$(KUSTOMIZE) build config/default | kubectl apply -f -
+gen-deployment: download-kustomize
+	rm -rf $(DEPLOYMENT_DIR)
+	for TARGET_PLATFORM in kubernetes openshift; do
+		PLATFORM_DIR=$(DEPLOYMENT_DIR)/$${TARGET_PLATFORM}
+		OBJECTS_DIR=$${PLATFORM_DIR}/objects
 
-undeploy: download-kustomize ## Undeploy controller from the K8s cluster specified in ~/.kube/config.
-	$(KUSTOMIZE) build config/default | kubectl delete -f -
+		mkdir -p $${OBJECTS_DIR}
+
+		COMBINED_FILENAME=$${PLATFORM_DIR}/combined.yaml
+		$(KUSTOMIZE) build config/$${TARGET_PLATFORM} | cat > $${COMBINED_FILENAME} -
+
+		# Split the giant files output by kustomize per-object
+		csplit -s -f "temp" --suppress-matched "$${COMBINED_FILENAME}" '/^---$$/' '{*}'
+		for file in temp??; do
+			name_kind=$$(yq -r '"\(.metadata.name).\(.kind)"' "$${file}")
+			mv "$${file}" "$${OBJECTS_DIR}/$${name_kind}.yaml"
+		done
+
+		echo "[INFO] Deployments resources generated into $${PLATFORM_DIR}"
+	done
 
 compile:
 	binary="$(BINARY)"
@@ -157,7 +176,7 @@ bundle: generate manifests download-kustomize download-operator-sdk ## Generate 
 
 	BUNDLE_PATH=$$($(MAKE) bundle-path)
 
-	$(KUSTOMIZE) build config/manifests | \
+	$(KUSTOMIZE) build config/openshift/olm | \
 	$(OPERATOR_SDK) generate bundle \
 	--quiet \
 	--overwrite \
@@ -169,7 +188,8 @@ bundle: generate manifests download-kustomize download-operator-sdk ## Generate 
 
 	CSV_PATH=$$($(MAKE) csv-path)
 	yq -riY '.metadata.annotations.containerImage = "'$(IMG)'"' $${CSV_PATH}
-	yq -riY '.spec.install.spec.deployments[0].spec.template.spec.containers[1].image = "'$(IMG)'"' $${CSV_PATH}
+	# Update container image for container 'kuebrnetes-image-puller-operator' in the list of deployments
+	yq -riY '.spec.install.spec.deployments[0].spec.template.spec.containers[] |= (select(.name == "kubernetes-image-puller-operator") .image |= "'$(IMG)'")' $${CSV_PATH}
 
 	# Copy bundle.Dockerfile to the bundle dir
  	# Update paths (since it is created in the root of the project) and labels

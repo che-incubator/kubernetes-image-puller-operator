@@ -20,4 +20,5 @@ roleRef:
   name: leader-election-role
 subjects:
 - kind: ServiceAccount
-  name: kubernetes-image-puller-operator
+  name: $(CONTROLLER_SERVICE_ACCOUNT)
+  namespace: kubernetes-image-puller-operator

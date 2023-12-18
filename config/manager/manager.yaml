@@ -13,7 +13,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: kubernetes-image-puller-operator
+  name: manager
   labels:
     name: kubernetes-image-puller-operator
 spec:
@@ -26,7 +26,7 @@ spec:
       labels:
         name: kubernetes-image-puller-operator
     spec:
-      serviceAccountName: kubernetes-image-puller-operator
+      serviceAccountName: $(CONTROLLER_SERVICE_ACCOUNT)
       containers:
       - name: kubernetes-image-puller-operator
         image: quay.io/eclipse/kubernetes-image-puller-operator:next

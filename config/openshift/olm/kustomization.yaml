@@ -10,7 +10,11 @@
 #   Red Hat, Inc. - initial API and implementation
 #
 
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: kubernetes-image-puller-operator
+# These resources constitute the fully configured set of manifests
+# used to generate the 'manifests/' directory in a bundle.
+
+resources:
+- ../../manifests
+- ../../samples
+- ../../scorecard
+- prefixed

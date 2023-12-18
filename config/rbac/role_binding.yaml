@@ -13,11 +13,12 @@
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: kubernetes-image-puller-operator
+  name: role-binding
 subjects:
 - kind: ServiceAccount
-  name: kubernetes-image-puller-operator
+  name: $(CONTROLLER_SERVICE_ACCOUNT)
+  namespace: kubernetes-image-puller-operator
 roleRef:
   kind: Role
-  name: kubernetes-image-puller-operator
+  name: role
   apiGroup: rbac.authorization.k8s.io

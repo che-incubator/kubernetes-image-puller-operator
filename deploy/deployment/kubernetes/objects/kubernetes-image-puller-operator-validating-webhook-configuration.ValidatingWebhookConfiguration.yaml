@@ -1,0 +1,27 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  annotations:
+    cert-manager.io/inject-ca-from: kubernetes-image-puller-operator/kubernetes-image-puller-operator-serving-cert
+  name: kubernetes-image-puller-operator-validating-webhook-configuration
+webhooks:
+- admissionReviewVersions:
+  - v1
+  - v1beta1
+  clientConfig:
+    service:
+      name: kubernetes-image-puller-operator-service
+      namespace: kubernetes-image-puller-operator
+      path: /validate-che-eclipse-org-v1alpha1-kubernetesimagepuller
+  failurePolicy: Fail
+  name: vkubernetesimagepuller.kb.io
+  rules:
+  - apiGroups:
+    - che.eclipse.org
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    resources:
+    - kubernetesimagepullers
+  sideEffects: None

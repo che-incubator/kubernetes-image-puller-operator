@@ -13,6 +13,7 @@
 # https://access.redhat.com/containers/?tab=tags#/registry.access.redhat.com/ubi8/go-toolset
 FROM registry.access.redhat.com/ubi8/go-toolset:1.20.10-3 as builder
 ENV GOPATH=/go/
+ARG SKIP_TESTS="false"
 USER root
 
 WORKDIR /workspace
@@ -30,9 +31,10 @@ COPY api/ api/
 COPY controllers/ controllers/
 COPY pkg/ pkg/
 COPY hack/ hack/
+COPY config/webhook/ config/webhook/
 
 # Test
-RUN make test
+RUN if [[ ${SKIP_TESTS} == "false" ]]; then make test; fi
 # Build
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o manager main.go
 

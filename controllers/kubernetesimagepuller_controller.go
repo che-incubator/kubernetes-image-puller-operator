@@ -24,6 +24,7 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -244,7 +245,11 @@ func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctr
 
 	// If DeploymentName has changed, delete the old deployment and create a new one
 	deployments := &appsv1.DeploymentList{}
-	err = r.List(context.TODO(), deployments, client.MatchingLabels{"app": "kubernetes-image-puller"})
+	listOptions := &client.ListOptions{
+		Namespace:     instance.Namespace,
+		LabelSelector: labels.SelectorFromValidatedSet(map[string]string{"app": "kubernetes-image-puller"}),
+	}
+	err = r.List(context.TODO(), deployments, listOptions)
 	if err != nil {
 		r.Log.Error(err, "Error listing deployments")
 		return ctrl.Result{}, err

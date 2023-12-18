@@ -96,7 +96,7 @@ buildBundleFromSources() {
   mv ${BUNDLE_DIR}/bundle.Dockerfile ${BUNDLE_DIR}/Dockerfile
 
   # Set operator image from the registry
-  yq -rYi '.spec.install.spec.deployments[0].spec.template.spec.containers[1].image = "'${OPERATOR_IMAGE}'"' ${BUNDLE_DIR}/manifests/kubernetes-imagepuller-operator.clusterserviceversion.yaml
+  yq -riY '.spec.install.spec.deployments[0].spec.template.spec.containers[] |= (select(.name == "kubernetes-image-puller-operator") .image |= "'${OPERATOR_IMAGE}'")' ${BUNDLE_DIR}/manifests/kubernetes-imagepuller-operator.clusterserviceversion.yaml
 
   oc delete buildconfigs ${REGISTRY_BUNDLE_IMAGE_NAME} --ignore-not-found=true -n "${NAMESPACE}"
   oc delete imagestreamtag ${REGISTRY_BUNDLE_IMAGE_NAME}:latest --ignore-not-found=true -n "${NAMESPACE}"
