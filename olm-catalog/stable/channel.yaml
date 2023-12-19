@@ -27,3 +27,5 @@ entries:
     replaces: kubernetes-imagepuller-operator.v1.0.4
   - name: kubernetes-imagepuller-operator.v1.0.6
     replaces: kubernetes-imagepuller-operator.v1.0.5
+  - name: kubernetes-imagepuller-operator.v1.1.0
+    replaces: kubernetes-imagepuller-operator.v1.0.6
