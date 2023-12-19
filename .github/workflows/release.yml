@@ -73,7 +73,6 @@ jobs:
           echo "RELEASE_VERSION=${RELEASE_VERSION}"
           BRANCH=${RELEASE_VERSION%.*}.x
           echo "BRANCH=${BRANCH}"
-          hub version
           git config --global user.name "Anatolii Bazko"
           git config --global user.email "abazko@redhat.com"
           export GITHUB_TOKEN=${{ secrets.CHE_INCUBATOR_BOT_GITHUB_TOKEN }}

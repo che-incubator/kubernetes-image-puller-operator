@@ -180,7 +180,7 @@ createPRToMainBranch() {
   fi
   git push origin $tmpBranch -f
   if [[ $FORCE_UPDATE == "--force" ]]; then set +e; fi  # don't fail if PR already exists (just force push commits into it)
-  hub pull-request $FORCE_UPDATE --base main --head ${tmpBranch} -m "ci: Copy ${RELEASE_VERSION} bundle to main"
+  gh pr create -f -B main -H ${tmpBranch} -t "ci: Copy ${RELEASE_VERSION} bundle to main"
   set -e
 }
 
