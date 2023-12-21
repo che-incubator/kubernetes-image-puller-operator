@@ -10,19 +10,13 @@
 #   Red Hat, Inc. - initial API and implementation
 #
 
-apiVersion: v1
-kind: Service
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
 metadata:
   creationTimestamp: null
-  labels:
-    name: kubernetes-image-puller-operator
-  name: controller-manager-metrics-service
-spec:
-  ports:
-  - name: https
-    port: 8443
-    targetPort: https
-  selector:
-    name: kubernetes-image-puller-operator
-status:
-  loadBalancer: {}
+  name: kubernetes-image-puller-operator-metrics-reader
+rules:
+- nonResourceURLs:
+  - /metrics
+  verbs:
+  - get

@@ -35,6 +35,11 @@ spec:
 
 ### Installing The Operator
 
+> Notice: starting from version 1.1.0, this operator requires the cert-manager operator for serving validating webhooks on Kubernetes clusters. This is not required for installation on OpenShift clusters. To install cert-manager on a Kubernetes cluster run:
+```
+kubectl apply --validate=false -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.3/cert-manager.yaml
+```
+
 #### Installing from OperatorHub
 
 > Notice: to install operator using OperatorHub you need to have Kubernetes cluster with pre-installed OLM. 
