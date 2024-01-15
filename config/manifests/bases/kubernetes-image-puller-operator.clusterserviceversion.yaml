@@ -10,7 +10,7 @@ metadata:
     createdAt: ""
     description: Create and manage kubernetes-image-puller instances.
     repository: https://github.com/che-incubator/kubernetes-image-puller-operator
-    support: ""
+    support: Community
   name: kubernetes-imagepuller-operator.v0.0.0
   namespace: placeholder
 spec:
