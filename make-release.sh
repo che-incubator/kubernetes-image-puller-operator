@@ -97,10 +97,12 @@ releaseOlmFiles() {
   CURRENT_VERSION=$(make bundle-version)
   PACKAGE=$(make bundle-package)
   CSV_PATH=$(make csv-path)
+  CREATE_TIMESTAMP=$(date +"%Y-%m-%dT%H:%M:%SZ")
 
   make bundle IMG="${RELEASE_IMAGE}"
 
   yq -riY '.metadata.name = "'${PACKAGE}'.v'${RELEASE_VERSION}'"' ${CSV_PATH}
+  yq -riY '.metadata.annotations.createdAt = "'${CREATE_TIMESTAMP}'"' ${CSV_PATH}
   yq -riY '.spec.version = "'${RELEASE_VERSION}'"' ${CSV_PATH}
   yq -riY '.spec.replaces = "'${PACKAGE}'.v'${CURRENT_VERSION}'"' ${CSV_PATH}
 
