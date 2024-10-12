@@ -39,7 +39,7 @@ RUN if [[ ${SKIP_TESTS} == "false" ]]; then make test; fi
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o manager main.go
 
 # https://access.redhat.com/containers/?tab=tags#/registry.access.redhat.com/ubi8-minimal
-FROM registry.access.redhat.com/ubi8-minimal:8.10-1052
+FROM registry.access.redhat.com/ubi8-minimal:8.10-1086
 
 ENV OPERATOR=/manager \
     USER_UID=1001 \
