@@ -44,6 +44,12 @@ jobs:
       - name: Run tests
         run: | 
           make download-operator-sdk
+          # Workaround, install specific version of OLM
+          # There is no crds.yaml in the latest release to deploy OLM 
           bin/operator-sdk olm install --version v0.28.0
+          kubectl wait --for=condition=ready pod -l app=olm-operator -n olm --timeout=120s
+          kubectl wait --for=condition=ready pod -l app=catalog-operator -n olm --timeout=120s
+          kubectl wait --for=condition=ready pod -l app=packageserver -n olm --timeout=120s
+          kubectl wait --for=condition=ready pod -l olm.catalogSource=operatorhubio-catalog -n olm --timeout=120s
           bin/operator-sdk scorecard bundle
         
