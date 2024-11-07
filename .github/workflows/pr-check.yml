@@ -50,6 +50,6 @@ jobs:
           kubectl wait --for=condition=ready pod -l app=olm-operator -n olm --timeout=120s
           kubectl wait --for=condition=ready pod -l app=catalog-operator -n olm --timeout=120s
           kubectl wait --for=condition=ready pod -l app=packageserver -n olm --timeout=120s
-          kubectl wait --for=condition=ready pod -l olm.catalogSource=operatorhubio-catalog -n olm --timeout=120s
+          kubectl wait --for=condition=ready pod -l olm.catalogSource=operatorhubio-catalog -n olm --timeout=240s
           bin/operator-sdk scorecard bundle
         
