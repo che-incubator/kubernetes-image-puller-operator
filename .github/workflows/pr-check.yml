@@ -44,6 +44,6 @@ jobs:
       - name: Run tests
         run: | 
           make download-operator-sdk
-          bin/operator-sdk olm install
+          bin/operator-sdk olm install --version v0.28.0
           bin/operator-sdk scorecard bundle
         
