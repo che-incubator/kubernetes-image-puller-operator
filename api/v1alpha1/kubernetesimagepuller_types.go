@@ -60,10 +60,10 @@ type KubernetesImagePullerStatus struct {
 }
 
 // KubernetesImagePuller is the Schema for the kubernetesimagepullers API
-//+kubebuilder:object:root=true
-//+kubebuilder:subresource:status
-//+kubebuilder:resource:path=kubernetesimagepullers,scope=Namespaced
-//+operator-sdk:csv:customresourcedefinitions:resources={{ConfigMap,v1},{Deployment,apps/v1},{DaemonSet,apps/v1}}
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:resource:path=kubernetesimagepullers,scope=Namespaced
+// +operator-sdk:csv:customresourcedefinitions:resources={{ConfigMap,v1},{Deployment,apps/v1},{DaemonSet,apps/v1}}
 type KubernetesImagePuller struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

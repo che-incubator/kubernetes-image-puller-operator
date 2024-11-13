@@ -55,16 +55,16 @@ jobs:
         file: ./build/Dockerfile
         tags:  quay.io/eclipse/${{ steps.prep.outputs.image }}:${{ steps.prep.outputs.version }},quay.io/eclipse/${{ steps.prep.outputs.image }}:${{ steps.prep.outputs.short_sha1 }}
         push: true
-    - 
-      name: Create failure MM message
-      if: ${{ failure() }}
-      run: |
-        echo "{\"text\":\":no_entry_sign: Kubernetes Image puller Operator build has failed: https://github.com/che-incubator/kubernetes-image-puller-operator/actions/workflows/next-build.yml\"}" > mattermost.json
-    - 
-      name: Send MM message
-      if: ${{ failure() }}
-      uses: mattermost/action-mattermost-notify@1.1.0
-      env:
-        MATTERMOST_WEBHOOK_URL: ${{ secrets.MATTERMOST_WEBHOOK_URL }}
-        MATTERMOST_CHANNEL: eclipse-che-ci
-        MATTERMOST_USERNAME: che-bot
+#    -
+#      name: Create failure MM message
+#      if: ${{ failure() }}
+#      run: |
+#        echo "{\"text\":\":no_entry_sign: Kubernetes Image puller Operator build has failed: https://github.com/che-incubator/kubernetes-image-puller-operator/actions/workflows/next-build.yml\"}" > mattermost.json
+#    -
+#      name: Send MM message
+#      if: ${{ failure() }}
+#      uses: mattermost/action-mattermost-notify@1.1.0
+#      env:
+#        MATTERMOST_WEBHOOK_URL: ${{ secrets.MATTERMOST_WEBHOOK_URL }}
+#        MATTERMOST_CHANNEL: eclipse-che-ci
+#        MATTERMOST_USERNAME: che-bot
