@@ -23,7 +23,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	types "k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -173,10 +172,6 @@ func defaultImagePullerWithConfigMapNameDeploymentNameAndImagePullerImage() *che
 func expectedDeployment(cr *chev1alpha1.KubernetesImagePuller) *appsv1.Deployment {
 	deployment := NewImagePullerDeployment(cr)
 	deployment.ResourceVersion = "1"
-	deployment.TypeMeta = metav1.TypeMeta{
-		Kind:       "Deployment",
-		APIVersion: appsv1.SchemeGroupVersion.String(),
-	}
 	return deployment
 }
 
@@ -187,12 +182,15 @@ func expectedConfigMap(cr *chev1alpha1.KubernetesImagePuller) *corev1.ConfigMap 
 	return configMap
 }
 
-func setupClient(t *testing.T, objs ...runtime.Object) client.Client {
+func setupClient(t *testing.T, objs ...client.Object) client.Client {
 	if err := chev1alpha1.AddToScheme(scheme.Scheme); err != nil {
 		t.Errorf("Error adding to scheme: %v", err)
 	}
-	client := fake.NewFakeClientWithScheme(scheme.Scheme, objs...)
-	return client
+	return fake.NewClientBuilder().
+		WithScheme(scheme.Scheme).
+		WithObjects(objs...).
+		WithStatusSubresource(&chev1alpha1.KubernetesImagePuller{}).
+		Build()
 }
 
 func TestSetsConfigMapName(t *testing.T) {

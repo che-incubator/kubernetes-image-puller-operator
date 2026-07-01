@@ -29,8 +29,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
 // KubernetesImagePullerReconciler reconciles a KubernetesImagePuller object
@@ -351,22 +349,9 @@ func GetDeploymentConfigMapName(deployment *appsv1.Deployment) string {
 func (r *KubernetesImagePullerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&chev1alpha1.KubernetesImagePuller{}).
-		Watches(&source.Kind{Type: &chev1alpha1.KubernetesImagePuller{}}, &handler.EnqueueRequestForObject{}).
-		Watches(&source.Kind{Type: &appsv1.DaemonSet{}}, &handler.EnqueueRequestForOwner{
-			IsController: true,
-			OwnerType:    &chev1alpha1.KubernetesImagePuller{},
-		}).
-		Watches(&source.Kind{Type: &appsv1.Deployment{}}, &handler.EnqueueRequestForOwner{
-			IsController: true,
-			OwnerType:    &chev1alpha1.KubernetesImagePuller{},
-		}).
-		Watches(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
-			IsController: true,
-			OwnerType:    &chev1alpha1.KubernetesImagePuller{},
-		}).
-		Watches(&source.Kind{Type: &corev1.ConfigMap{}}, &handler.EnqueueRequestForOwner{
-			IsController: true,
-			OwnerType:    &chev1alpha1.KubernetesImagePuller{},
-		}).
+		Owns(&appsv1.DaemonSet{}).
+		Owns(&appsv1.Deployment{}).
+		Owns(&corev1.Pod{}).
+		Owns(&corev1.ConfigMap{}).
 		Complete(r)
 }
