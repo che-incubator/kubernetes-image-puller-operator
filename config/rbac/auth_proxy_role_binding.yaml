@@ -20,5 +20,5 @@ roleRef:
   name: proxy-role
 subjects:
 - kind: ServiceAccount
-  name: $(CONTROLLER_SERVICE_ACCOUNT)
+  name: sa
   namespace: kubernetes-image-puller-operator

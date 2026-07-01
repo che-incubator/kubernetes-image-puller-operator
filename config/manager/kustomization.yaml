@@ -28,14 +28,3 @@ images:
 - name: quay.io/eclipse/kubernetes-image-puller-operator:next
   newName: quay.io/eclipse/kubernetes-image-puller-operator
   newTag: 1.0.4
-
-vars:
-- fieldref: {}
-  name: CONTROLLER_SERVICE_ACCOUNT
-  objref:
-    kind: ServiceAccount
-    name: sa
-    version: v1
-
-configurations:
-- kustomizeconfig.yaml

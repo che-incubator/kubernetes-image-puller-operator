@@ -10,10 +10,13 @@
 #   Red Hat, Inc. - initial API and implementation
 #
 
-varReference:
-- kind: ClusterRoleBinding
-  group: rbac.authorization.k8s.io
-  path: subjects/name
-- kind: RoleBinding
-  group: rbac.authorization.k8s.io
-  path: subjects/name
+nameReference:
+- kind: ServiceAccount
+  version: v1
+  fieldSpecs:
+  - kind: RoleBinding
+    group: rbac.authorization.k8s.io
+    path: subjects/name
+  - kind: ClusterRoleBinding
+    group: rbac.authorization.k8s.io
+    path: subjects/name

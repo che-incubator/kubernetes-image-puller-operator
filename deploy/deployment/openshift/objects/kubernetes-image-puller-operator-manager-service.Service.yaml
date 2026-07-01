@@ -3,7 +3,7 @@ kind: Service
 metadata:
   annotations:
     service.beta.openshift.io/serving-cert-secret-name: kubernetes-image-puller-operator-service-cert
-  name: kubernetes-image-puller-operator-service
+  name: kubernetes-image-puller-operator-manager-service
   namespace: kubernetes-image-puller-operator
 spec:
   ports:

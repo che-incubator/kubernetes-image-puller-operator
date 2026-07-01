@@ -3,11 +3,11 @@
 
 namePrefix: kubernetes-image-puller-operator-
 
-bases:
+resources:
 - ../../../default
 
 # These patches remove the unnecessary "cert" volume and its manager container volumeMount.
-patchesJson6902:
+patches:
 - target:
     group: apps
     version: v1

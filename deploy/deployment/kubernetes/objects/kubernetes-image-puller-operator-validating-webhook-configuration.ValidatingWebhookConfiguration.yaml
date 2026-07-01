@@ -3,6 +3,7 @@ kind: ValidatingWebhookConfiguration
 metadata:
   annotations:
     cert-manager.io/inject-ca-from: kubernetes-image-puller-operator/kubernetes-image-puller-operator-serving-cert
+  creationTimestamp: null
   name: kubernetes-image-puller-operator-validating-webhook-configuration
 webhooks:
 - admissionReviewVersions:
@@ -10,7 +11,7 @@ webhooks:
   - v1beta1
   clientConfig:
     service:
-      name: kubernetes-image-puller-operator-service
+      name: kubernetes-image-puller-operator-manager-service
       namespace: kubernetes-image-puller-operator
       path: /validate-che-eclipse-org-v1alpha1-kubernetesimagepuller
   failurePolicy: Fail
