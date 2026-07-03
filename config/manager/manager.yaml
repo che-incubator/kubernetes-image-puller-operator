@@ -27,6 +27,10 @@ spec:
         name: kubernetes-image-puller-operator
     spec:
       serviceAccountName: $(CONTROLLER_SERVICE_ACCOUNT)
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       containers:
       - name: kubernetes-image-puller-operator
         image: quay.io/eclipse/kubernetes-image-puller-operator:next
@@ -35,6 +39,15 @@ spec:
         args:
         - --leader-elect
         imagePullPolicy: Always
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
         env:
           - name: WATCH_NAMESPACE
             valueFrom:
@@ -65,4 +78,7 @@ spec:
           requests:
             cpu: 100m
             memory: 64Mi
+      volumes:
+      - name: tmp
+        emptyDir: {}
       terminationGracePeriodSeconds: 10
