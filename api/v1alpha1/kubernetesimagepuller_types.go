@@ -46,6 +46,8 @@ type KubernetesImagePullerSpec struct {
 	ImagePullSecrets string `json:"imagePullSecrets,omitempty"`
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Affinity"
 	Affinity string `json:"affinity,omitempty"`
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Tolerations"
+	Tolerations string `json:"tolerations,omitempty"`
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="ImagePull name"
 	ImagePullerImage string `json:"imagePullerImage,omitempty"`
 }
