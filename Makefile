@@ -129,7 +129,7 @@ test: manifests generate fmt vet download-envtest ## Run tests.
 	KUBEBUILDER_ASSETS="$$($(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(shell pwd)/testbin -p path)" go test ./... -coverprofile cover.out
 
 download-envtest: ## Download setup-envtest tool
-	test -s $(ENVTEST) || GOBIN=$(shell pwd)/bin go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
+	test -s $(ENVTEST) || GOBIN=$(shell pwd)/bin go install sigs.k8s.io/controller-runtime/tools/setup-envtest@release-0.19
 
 # Set a new operator image for kustomize
 kustomize-operator-image: download-kustomize
