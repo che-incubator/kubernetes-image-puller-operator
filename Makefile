@@ -168,6 +168,15 @@ compile:
 
 ##@ OLM catalog
 
+# BUNDLE_GEN_FLAGS are the flags passed to the operator-sdk generate bundle command.
+# To pin image tags to digests for disconnected/air-gapped environments, run:
+#   make bundle USE_IMAGE_DIGESTS=true
+BUNDLE_GEN_FLAGS ?= --quiet --overwrite --version $(VERSION) --package $(PACKAGE) --channels $(CHANNEL) --default-channel $(CHANNEL)
+USE_IMAGE_DIGESTS ?= false
+ifeq ($(USE_IMAGE_DIGESTS), true)
+BUNDLE_GEN_FLAGS += --use-image-digests
+endif
+
 .PHONY: bundle
 bundle: generate manifests download-kustomize download-operator-sdk ## Generate OLM bundle
 	echo "[INFO] Updating OperatorHub bundle"
@@ -179,13 +188,8 @@ bundle: generate manifests download-kustomize download-operator-sdk ## Generate 
 
 	$(KUSTOMIZE) build config/openshift/olm | \
 	$(OPERATOR_SDK) generate bundle \
-	--quiet \
-	--overwrite \
-	--version $(VERSION) \
-	--package $(PACKAGE) \
-	--output-dir $${BUNDLE_PATH} \
-	--channels $(CHANNEL) \
-	--default-channel $(CHANNEL)
+	$(BUNDLE_GEN_FLAGS) \
+	--output-dir $${BUNDLE_PATH}
 
 	CSV_PATH=$$($(MAKE) csv-path)
 	yq -riY '.metadata.annotations.containerImage = "'$(IMG)'"' $${CSV_PATH}
