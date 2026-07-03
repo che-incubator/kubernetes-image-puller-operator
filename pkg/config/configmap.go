@@ -57,6 +57,7 @@ func DefaultImagePullerConfigMap(namespace string, name string) *corev1.ConfigMa
 			"NODE_SELECTOR":          "{}",
 			"IMAGE_PULL_SECRETS":     "",
 			"AFFINITY":               "{}",
+			"TOLERATIONS":            "[]",
 			"KIP_IMAGE":              "quay.io/eclipse/kubernetes-image-puller:next",
 			"NAMESPACE":              namespace,
 		},
@@ -97,6 +98,9 @@ func mergeConfigMapWithCR(instance *chev1alpha1.KubernetesImagePuller, defaultCo
 	}
 	if instance.Spec.Affinity != "" {
 		defaultConfigMap.Data["AFFINITY"] = instance.Spec.Affinity
+	}
+	if instance.Spec.Tolerations != "" {
+		defaultConfigMap.Data["TOLERATIONS"] = instance.Spec.Tolerations
 	}
 	if instance.Spec.DaemonsetName != "" {
 		defaultConfigMap.Data["DAEMONSET_NAME"] = instance.Spec.DaemonsetName
