@@ -5,8 +5,8 @@ metadata:
   namespace: kubernetes-image-puller-operator
 spec:
   dnsNames:
-  - kubernetes-image-puller-operator-service.kubernetes-image-puller-operator.svc
-  - kubernetes-image-puller-operator-service.kubernetes-image-puller-operator.svc.cluster.local
+  - kubernetes-image-puller-operator-manager-service.kubernetes-image-puller-operator.svc
+  - kubernetes-image-puller-operator-manager-service.kubernetes-image-puller-operator.svc.cluster.local
   issuerRef:
     kind: Issuer
     name: kubernetes-image-puller-operator-selfsigned-issuer

@@ -15,4 +15,4 @@ kind: CustomResourceDefinition
 metadata:
   name: kubernetesimagepullers.che.eclipse.org
   annotations:
-    cert-manager.io/inject-ca-from: $(CERTIFICATE_NAMESPACE)/$(CERTIFICATE_NAME)
+    cert-manager.io/inject-ca-from: CERTIFICATE_NAMESPACE/CERTIFICATE_NAME

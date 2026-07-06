@@ -12,12 +12,25 @@
 
 namespace: kubernetes-image-puller-operator
 
-bases:
+resources:
 - ../crd
 - ../rbac
 - ../manager
 - ../webhook
 
-patchesStrategicMerge:
-- manager_auth_proxy_patch.yaml
-- manager_webhook_patch.yaml
+patches:
+- path: manager_auth_proxy_patch.yaml
+- path: manager_webhook_patch.yaml
+
+replacements:
+- source:
+    kind: ServiceAccount
+    version: v1
+    name: sa
+    fieldPath: metadata.name
+  targets:
+  - select:
+      kind: Deployment
+      group: apps
+    fieldPaths:
+    - spec.template.spec.serviceAccountName

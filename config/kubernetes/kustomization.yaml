@@ -16,35 +16,80 @@ resources:
   - ../default
   - ../certmanager
 
-patchesStrategicMerge:
-  - patches/cainjection_in_kubernetesimagepullers.yaml
-  - patches/cainjection_in_webhook.yaml
+patches:
+  - path: patches/cainjection_in_kubernetesimagepullers.yaml
+  - path: patches/cainjection_in_webhook.yaml
 
-vars:
-# [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER' prefix.
-- name: CERTIFICATE_NAMESPACE # namespace of the certificate CR
-  objref:
+replacements:
+- source:
     kind: Certificate
     group: cert-manager.io
     version: v1
-    name: kubernetes-image-puller-operator-serving-cert # this name should match the one in certificate.yaml
-  fieldref:
-    fieldpath: metadata.namespace
-- name: CERTIFICATE_NAME
-  objref:
+    name: kubernetes-image-puller-operator-serving-cert
+    fieldPath: metadata.namespace
+  targets:
+  - select:
+      kind: CustomResourceDefinition
+    fieldPaths:
+    - metadata.annotations.[cert-manager.io/inject-ca-from]
+    options:
+      delimiter: /
+      index: 0
+  - select:
+      kind: ValidatingWebhookConfiguration
+    fieldPaths:
+    - metadata.annotations.[cert-manager.io/inject-ca-from]
+    options:
+      delimiter: /
+      index: 0
+- source:
     kind: Certificate
     group: cert-manager.io
     version: v1
-    name: kubernetes-image-puller-operator-serving-cert # this name should match the one in certificate.yaml
-- name: SERVICE_NAMESPACE # namespace of the service
-  objref:
+    name: kubernetes-image-puller-operator-serving-cert
+    fieldPath: metadata.name
+  targets:
+  - select:
+      kind: CustomResourceDefinition
+    fieldPaths:
+    - metadata.annotations.[cert-manager.io/inject-ca-from]
+    options:
+      delimiter: /
+      index: 1
+  - select:
+      kind: ValidatingWebhookConfiguration
+    fieldPaths:
+    - metadata.annotations.[cert-manager.io/inject-ca-from]
+    options:
+      delimiter: /
+      index: 1
+- source:
     kind: Service
     version: v1
     name: kubernetes-image-puller-operator-manager-service
-  fieldref:
-    fieldpath: metadata.namespace
-- name: SERVICE_NAME
-  objref:
+    fieldPath: metadata.name
+  targets:
+  - select:
+      kind: Certificate
+      group: cert-manager.io
+    fieldPaths:
+    - spec.dnsNames.0
+    - spec.dnsNames.1
+    options:
+      delimiter: .
+      index: 0
+- source:
     kind: Service
     version: v1
     name: kubernetes-image-puller-operator-manager-service
+    fieldPath: metadata.namespace
+  targets:
+  - select:
+      kind: Certificate
+      group: cert-manager.io
+    fieldPaths:
+    - spec.dnsNames.0
+    - spec.dnsNames.1
+    options:
+      delimiter: .
+      index: 1

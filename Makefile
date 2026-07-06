@@ -265,7 +265,7 @@ catalog-push: ## Push a catalog image
 ##@ Utilities
 
 OPM ?= $(shell pwd)/bin/opm
-OPM_VERSION = v1.26.2
+OPM_VERSION = v1.48.0
 download-opm: SHELL := /bin/bash
 download-opm: ## Download opm tool
 	[[ -z "$(DEST)" ]] && dest=$(OPM) || dest=$(DEST)/opm
@@ -282,7 +282,7 @@ download-opm: ## Download opm tool
 
 
 OPERATOR_SDK ?= $(shell pwd)/bin/operator-sdk
-OPERATOR_SDK_VERSION = v1.9.2
+OPERATOR_SDK_VERSION = v1.38.0
 download-operator-sdk: SHELL := /bin/bash
 download-operator-sdk: ## Downloads operator sdk tool
 	[[ -z "$(DEST)" ]] && dest=$(OPERATOR_SDK) || dest=$(DEST)/operator-sdk
@@ -302,7 +302,7 @@ download-controller-gen: ## Download controller-gen tool
 
 KUSTOMIZE = $(shell pwd)/bin/kustomize
 download-kustomize: ## Download kustomize tool
-	$(call go-get-tool,$(KUSTOMIZE),sigs.k8s.io/kustomize/kustomize/v4@v4.5.7)
+	$(call go-get-tool,$(KUSTOMIZE),sigs.k8s.io/kustomize/kustomize/v5@v5.5.0)
 
 
 ADD_LICENSE = $(shell pwd)/bin/addlicense

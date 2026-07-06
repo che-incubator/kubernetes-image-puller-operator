@@ -16,7 +16,7 @@ metadata:
   name: role-binding
 subjects:
 - kind: ServiceAccount
-  name: $(CONTROLLER_SERVICE_ACCOUNT)
+  name: sa
   namespace: kubernetes-image-puller-operator
 roleRef:
   kind: Role
