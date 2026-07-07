@@ -163,7 +163,7 @@ compile:
 	if [ -z "$${binary}" ]; then
 		binary="/tmp/image-puller/kubernetes-image-puller-operator"
 	fi
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 GO111MODULE=on go build -a -o "$${binary}" main.go
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=1 GO111MODULE=on go build -a -o "$${binary}" main.go
 	echo "kubernetes-image-puller-operator binary compiled to $${binary}"
 
 ##@ OLM catalog

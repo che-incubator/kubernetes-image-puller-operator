@@ -36,7 +36,7 @@ COPY config/webhook/ config/webhook/
 # Test
 RUN if [[ ${SKIP_TESTS} == "false" ]]; then make test; fi
 # Build
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o manager main.go
+RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o manager main.go
 
 # https://catalog.redhat.com/software/containers/ubi9-minimal
 FROM registry.access.redhat.com/ubi9-minimal:9.5
