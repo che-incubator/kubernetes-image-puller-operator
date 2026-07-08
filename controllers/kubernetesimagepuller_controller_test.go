@@ -812,6 +812,39 @@ func TestUpdatesConfigMap(t *testing.T) {
 	}
 }
 
+func TestAnnotationRolloutOnConfigMapChange(t *testing.T) {
+	cr := defaultImagePullerWithConfigMapNameDeploymentNameAndImagePullerImage()
+	cr.Spec.DaemonsetName = "new-daemonset"
+	oldConfigMap := expectedConfigMap(defaultImagePullerWithConfigMapNameDeploymentNameAndImagePullerImage())
+	deployment := NewImagePullerDeployment(cr, false)
+	deployment.ResourceVersion = "1"
+
+	c := setupClient(t, cr, oldConfigMap, deployment,
+		createDaemonsetRole, createDaemonsetRoleBinding, defaultServiceAccount)
+	r := &KubernetesImagePullerReconciler{
+		Client: c,
+		Scheme: scheme.Scheme,
+		Log:    ctrl.Log.WithName("controllers").WithName("kubernetesimagepuller"),
+	}
+
+	if _, err := r.Reconcile(context.TODO(), ctrl.Request{NamespacedName: key}); err != nil {
+		t.Fatalf("Reconcile error: %v", err)
+	}
+
+	got := &appsv1.Deployment{}
+	if err := c.Get(context.TODO(), types.NamespacedName{Namespace: namespace, Name: defaultDeploymentName}, got); err != nil {
+		t.Fatalf("Error getting deployment: %v", err)
+	}
+
+	annotations := got.Spec.Template.Annotations
+	if annotations == nil {
+		t.Fatal("Expected pod template annotations to be set, got nil")
+	}
+	if _, ok := annotations["che.eclipse.org/configmap-hash"]; !ok {
+		t.Error("Expected che.eclipse.org/configmap-hash annotation on pod template")
+	}
+}
+
 func TestDeletesOldDeploymentOnNameChange(t *testing.T) {
 	type testcase struct {
 		name  string

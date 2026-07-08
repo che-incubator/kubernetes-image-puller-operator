@@ -14,7 +14,11 @@ package controllers
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
+	"sort"
 
 	chev1alpha1 "github.com/che-incubator/kubernetes-image-puller-operator/api/v1alpha1"
 	"github.com/che-incubator/kubernetes-image-puller-operator/pkg/config"
@@ -141,6 +145,18 @@ func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctr
 		return ctrl.Result{}, err
 	}
 
+	// Update the ConfigMap before triggering a rollout so new pods
+	// always read the persisted data.
+	newConfigMap := config.NewImagePullerConfigMap(instance)
+	configMapUpdated := false
+	if config.ConfigMapsDiffer(newConfigMap, foundConfigMap) {
+		if err = r.Update(context.TODO(), newConfigMap); err != nil {
+			r.Log.Error(err, "Error updating configmap")
+			return ctrl.Result{}, err
+		}
+		configMapUpdated = true
+	}
+
 	// If there is an existing deployment, roll it out on configmap change
 	oldDeployment := &appsv1.Deployment{}
 	if err = r.Get(ctx, types.NamespacedName{Name: instance.Spec.DeploymentName, Namespace: instance.Namespace}, oldDeployment); err != nil && !errors.IsNotFound(err) {
@@ -152,25 +168,18 @@ func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctr
 			log.Error(err, "Error reading configmap name from deployment")
 			return ctrl.Result{}, err
 		}
-		if config.ConfigMapsDiffer(config.NewImagePullerConfigMap(instance), foundConfigMap) || oldConfigMapName != foundConfigMap.Name {
+		if configMapUpdated || oldConfigMapName != foundConfigMap.Name {
 			if oldConfigMapName == foundConfigMap.Name {
-				// ConfigMap names are the same, delete pods and let the new pods pick up the new configmap
-
-				pods := &corev1.PodList{}
-				if err = r.List(ctx, pods, client.MatchingLabels{"app": defaults.AppLabelValue}); err != nil {
-					log.Error(err, "Error listing pods")
+				desiredHash := configMapDataHash(newConfigMap.Data)
+				if oldDeployment.Spec.Template.Annotations == nil {
+					oldDeployment.Spec.Template.Annotations = make(map[string]string)
+				}
+				oldDeployment.Spec.Template.Annotations["che.eclipse.org/configmap-hash"] = desiredHash
+				log.Info("ConfigMap content changed, triggering rolling restart")
+				if err = r.Update(ctx, oldDeployment); err != nil {
+					log.Error(err, "Error updating deployment for rollout")
 					return ctrl.Result{}, err
 				}
-				if len(pods.Items) > 0 {
-					for _, pod := range pods.Items {
-						log.Info("Deleting pod", "Pod.Name", pod.Name)
-						if err = r.Delete(ctx, &pod); err != nil {
-							log.Error(err, "Error deleting pod", "Pod.Name", pod.Name)
-							return ctrl.Result{}, err
-						}
-					}
-				}
-				// ConfigMap names are different, just run an update
 			} else {
 				err = r.Update(ctx, NewImagePullerDeployment(instance, r.IsOpenShift))
 				if err != nil {
@@ -181,14 +190,7 @@ func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctr
 		}
 	}
 
-	// If the configmap has already been created and the values have changed, update the configmap.
-	newConfigMap := config.NewImagePullerConfigMap(instance)
-	if config.ConfigMapsDiffer(newConfigMap, foundConfigMap) {
-		if err = r.Update(ctx, newConfigMap); err != nil {
-			log.Error(err, "Error updating configmap")
-			return ctrl.Result{}, err
-		}
-
+	if configMapUpdated {
 		return ctrl.Result{Requeue: true}, nil
 	}
 
@@ -394,6 +396,21 @@ func getContainerSecurityContext(isOpenShift bool) *corev1.SecurityContext {
 	}
 
 	return ctx
+}
+
+func configMapDataHash(data map[string]string) string {
+	keys := make([]string, 0, len(data))
+	for k := range data {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	raw, _ := json.Marshal(keys)
+	for _, k := range keys {
+		v, _ := json.Marshal(data[k])
+		raw = append(raw, v...)
+	}
+	hash := sha256.Sum256(raw)
+	return hex.EncodeToString(hash[:])
 }
 
 // SetupWithManager sets up the controller with the Manager.
