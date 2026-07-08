@@ -14,6 +14,7 @@ package rbac
 
 import (
 	chev1alpha1 "github.com/che-incubator/kubernetes-image-puller-operator/api/v1alpha1"
+	"github.com/che-incubator/kubernetes-image-puller-operator/pkg/defaults"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -26,7 +27,7 @@ func NewRole(cr *chev1alpha1.KubernetesImagePuller) *rbacv1.Role {
 			APIVersion: rbacv1.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "create-daemonset",
+			Name:      defaults.RBACName,
 			Namespace: cr.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
 				*metav1.NewControllerRef(cr, chev1alpha1.SchemeBuilder.GroupVersion.WithKind("KubernetesImagePuller")),
@@ -47,7 +48,7 @@ func NewRoleBinding(cr *chev1alpha1.KubernetesImagePuller) *rbacv1.RoleBinding {
 			APIVersion: rbacv1.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "create-daemonset",
+			Name:      defaults.RBACName,
 			Namespace: cr.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
 				*metav1.NewControllerRef(cr, chev1alpha1.SchemeBuilder.GroupVersion.WithKind("KubernetesImagePuller")),
@@ -55,12 +56,12 @@ func NewRoleBinding(cr *chev1alpha1.KubernetesImagePuller) *rbacv1.RoleBinding {
 		},
 		Subjects: []rbacv1.Subject{{
 			Kind: "ServiceAccount",
-			Name: "k8s-image-puller",
+			Name: defaults.ServiceAccountName,
 		}},
 		RoleRef: rbacv1.RoleRef{
 			APIGroup: rbacv1.SchemeGroupVersion.Group,
 			Kind:     "Role",
-			Name:     "create-daemonset",
+			Name:     defaults.RBACName,
 		},
 	}
 }
@@ -72,7 +73,7 @@ func NewServiceAccount(cr *chev1alpha1.KubernetesImagePuller) *corev1.ServiceAcc
 			APIVersion: corev1.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "k8s-image-puller",
+			Name:      defaults.ServiceAccountName,
 			Namespace: cr.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
 				*metav1.NewControllerRef(cr, chev1alpha1.SchemeBuilder.GroupVersion.WithKind("KubernetesImagePuller")),

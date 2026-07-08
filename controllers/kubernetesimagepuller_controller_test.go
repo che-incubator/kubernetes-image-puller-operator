@@ -18,6 +18,7 @@ import (
 
 	chev1alpha1 "github.com/che-incubator/kubernetes-image-puller-operator/api/v1alpha1"
 	"github.com/che-incubator/kubernetes-image-puller-operator/pkg/config"
+	"github.com/che-incubator/kubernetes-image-puller-operator/pkg/defaults"
 	"github.com/google/go-cmp/cmp"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -51,7 +52,7 @@ var (
 			APIVersion: rbacv1.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:            "create-daemonset",
+			Name:            defaults.RBACName,
 			Namespace:       namespace,
 			OwnerReferences: []metav1.OwnerReference{defaultCROwnerReference},
 			ResourceVersion: "1",
@@ -68,19 +69,19 @@ var (
 			APIVersion: rbacv1.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:            "create-daemonset",
+			Name:            defaults.RBACName,
 			Namespace:       namespace,
 			OwnerReferences: []metav1.OwnerReference{defaultCROwnerReference},
 			ResourceVersion: "1",
 		},
 		Subjects: []rbacv1.Subject{{
 			Kind: "ServiceAccount",
-			Name: "k8s-image-puller",
+			Name: defaults.ServiceAccountName,
 		}},
 		RoleRef: rbacv1.RoleRef{
 			APIGroup: rbacv1.SchemeGroupVersion.Group,
 			Kind:     "Role",
-			Name:     "create-daemonset",
+			Name:     defaults.RBACName,
 		},
 	}
 	defaultServiceAccount = &corev1.ServiceAccount{
@@ -89,15 +90,15 @@ var (
 			APIVersion: corev1.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:            "k8s-image-puller",
+			Name:            defaults.ServiceAccountName,
 			Namespace:       namespace,
 			OwnerReferences: []metav1.OwnerReference{defaultCROwnerReference},
 			ResourceVersion: "1",
 		},
 	}
-	defaultConfigMapName    = "k8s-image-puller"
-	defaultDeploymentName   = "kubernetes-image-puller"
-	defaultImagePullerImage = "quay.io/eclipse/kubernetes-image-puller:next"
+	defaultConfigMapName    = defaults.ConfigMapName
+	defaultDeploymentName   = defaults.DeploymentName
+	defaultImagePullerImage = defaults.ImagePullerImage
 )
 
 func defaultImagePuller() *chev1alpha1.KubernetesImagePuller {
@@ -333,7 +334,7 @@ func TestCreatesDeployment(t *testing.T) {
 		t.Errorf("Got error in reconcile: %v", err)
 	}
 
-	if err := client.Get(context.TODO(), types.NamespacedName{Namespace: namespace, Name: "kubernetes-image-puller"}, got); err != nil {
+	if err := client.Get(context.TODO(), types.NamespacedName{Namespace: namespace, Name: defaults.DeploymentName}, got); err != nil {
 		t.Errorf("Error getting deployment: %v", err)
 	}
 	if d := cmp.Diff(want, got); d != "" {
@@ -547,7 +548,7 @@ func TestCreatesConfigMap(t *testing.T) {
 					Namespace:       namespace,
 					Name:            defaultConfigMapName,
 					ResourceVersion: "1",
-					Labels:          map[string]string{"app": "kubernetes-image-puller"},
+					Labels:          map[string]string{"app": defaults.AppLabelValue},
 					OwnerReferences: []metav1.OwnerReference{defaultCROwnerReference},
 				},
 				TypeMeta: metav1.TypeMeta{
@@ -596,7 +597,7 @@ func TestCreatesConfigMap(t *testing.T) {
 					Namespace:       namespace,
 					Name:            defaultConfigMapName,
 					ResourceVersion: "1",
-					Labels:          map[string]string{"app": "kubernetes-image-puller"},
+					Labels:          map[string]string{"app": defaults.AppLabelValue},
 					OwnerReferences: []metav1.OwnerReference{defaultCROwnerReference},
 				},
 				TypeMeta: metav1.TypeMeta{
@@ -631,7 +632,7 @@ func TestCreatesConfigMap(t *testing.T) {
 					"CACHING_CPU_LIMIT":      ".2",
 					"CACHING_CPU_REQUEST":    ".05",
 					"IMAGES":                 "java11-maven=quay.io/eclipse/che-java11-maven:next;che-theia=quay.io/eclipse/che-theia:next;java-plugin-runner=eclipse/che-remote-plugin-runner-java8:latest",
-					"DAEMONSET_NAME":         "kubernetes-image-puller",
+					"DAEMONSET_NAME":         defaults.DeploymentName,
 					"NODE_SELECTOR":          "{}",
 					"IMAGE_PULL_SECRETS":     "",
 					"AFFINITY":               "{}",
@@ -643,7 +644,7 @@ func TestCreatesConfigMap(t *testing.T) {
 					Namespace:       namespace,
 					Name:            "my-configmap",
 					ResourceVersion: "1",
-					Labels:          map[string]string{"app": "kubernetes-image-puller"},
+					Labels:          map[string]string{"app": defaults.AppLabelValue},
 					OwnerReferences: []metav1.OwnerReference{defaultCROwnerReference},
 				},
 				TypeMeta: metav1.TypeMeta{
@@ -716,7 +717,7 @@ func TestUpdatesConfigMap(t *testing.T) {
 					Namespace:       namespace,
 					Name:            defaultConfigMapName,
 					ResourceVersion: "2",
-					Labels:          map[string]string{"app": "kubernetes-image-puller"},
+					Labels:          map[string]string{"app": defaults.AppLabelValue},
 					OwnerReferences: []metav1.OwnerReference{defaultCROwnerReference},
 				},
 				Data: map[string]string{
@@ -761,7 +762,7 @@ func TestUpdatesConfigMap(t *testing.T) {
 					Namespace:       namespace,
 					Name:            "new-configmap",
 					ResourceVersion: "1",
-					Labels:          map[string]string{"app": "kubernetes-image-puller"},
+					Labels:          map[string]string{"app": defaults.AppLabelValue},
 					OwnerReferences: []metav1.OwnerReference{defaultCROwnerReference},
 				},
 				Data: map[string]string{
@@ -770,7 +771,7 @@ func TestUpdatesConfigMap(t *testing.T) {
 					"CACHING_MEMORY_REQUEST": "10Mi",
 					"CACHING_CPU_LIMIT":      ".2",
 					"CACHING_CPU_REQUEST":    ".05",
-					"DAEMONSET_NAME":         "kubernetes-image-puller",
+					"DAEMONSET_NAME":         defaults.DeploymentName,
 					"IMAGES":                 "java11-maven=quay.io/eclipse/che-java11-maven:next;che-theia=quay.io/eclipse/che-theia:next;java-plugin-runner=eclipse/che-remote-plugin-runner-java8:latest",
 					"NODE_SELECTOR":          "{}",
 					"IMAGE_PULL_SECRETS":     "",
@@ -844,7 +845,7 @@ func TestDeletesOldDeploymentOnNameChange(t *testing.T) {
 				t.Errorf("Got error in reconcile: %v", err)
 			}
 			deployments := &appsv1.DeploymentList{}
-			c.List(context.TODO(), deployments, client.MatchingLabels{"app": "kubernetes-image-puller"})
+			c.List(context.TODO(), deployments, client.MatchingLabels{"app": defaults.AppLabelValue})
 			if err != nil {
 				t.Errorf("Error listing deployments: %v", err)
 			}
