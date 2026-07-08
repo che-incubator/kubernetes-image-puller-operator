@@ -237,71 +237,65 @@ spec:
                 - ""
               resources:
                 - pods
-                - services
-                - services/finalizers
-                - endpoints
-                - persistentvolumeclaims
-                - events
+              verbs:
+                - delete
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - ""
+              resources:
                 - configmaps
-                - secrets
-                - serviceaccounts
               verbs:
                 - create
                 - delete
                 - get
                 - list
-                - patch
                 - update
                 - watch
+            - apiGroups:
+                - ""
+              resources:
+                - serviceaccounts
+              verbs:
+                - create
+                - get
             - apiGroups:
                 - rbac.authorization.k8s.io
               resources:
                 - roles
                 - rolebindings
               verbs:
+                - create
+                - delete
                 - get
                 - list
                 - watch
-                - create
-                - delete
             - apiGroups:
                 - apps
               resources:
                 - deployments
-                - daemonsets
-                - replicasets
-                - statefulsets
               verbs:
                 - create
                 - delete
                 - get
                 - list
-                - patch
                 - update
                 - watch
             - apiGroups:
                 - apps
               resources:
-                - deployments/finalizers
-              verbs:
-                - update
-            - apiGroups:
-                - monitoring.coreos.com
-              resources:
-                - servicemonitors
+                - daemonsets
               verbs:
                 - get
-                - create
-            - apiGroups:
-                - ""
-              resources:
-                - pods
-              verbs:
-                - get
+                - list
+                - watch
             - apiGroups:
                 - che.eclipse.org
               resources:
-                - '*'
+                - kubernetesimagepullers
+                - kubernetesimagepullers/status
+                - kubernetesimagepullers/finalizers
               verbs:
                 - create
                 - delete
