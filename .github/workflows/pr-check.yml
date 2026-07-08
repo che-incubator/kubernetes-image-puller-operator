@@ -53,4 +53,4 @@ jobs:
         run: |
           make download-operator-sdk
           bin/operator-sdk olm install --version v0.28.0
-          bin/operator-sdk scorecard bundle
+          bin/operator-sdk scorecard bundle --wait-time 120s
