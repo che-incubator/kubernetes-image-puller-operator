@@ -13,7 +13,6 @@
 package v1alpha1
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -85,15 +84,4 @@ type KubernetesImagePullerList struct {
 
 func init() {
 	SchemeBuilder.Register(&KubernetesImagePuller{}, &KubernetesImagePullerList{})
-}
-
-type KubernetesImagePullerConfig struct {
-	configMap *corev1.ConfigMap
-}
-
-func (config *KubernetesImagePullerConfig) WithDaemonsetName(name string) *KubernetesImagePullerConfig {
-	config.configMap.Data["DAEMONSET_NAME"] = name
-	return &KubernetesImagePullerConfig{
-		configMap: config.configMap,
-	}
 }
