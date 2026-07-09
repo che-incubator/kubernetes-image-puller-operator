@@ -1,6 +1,6 @@
 module github.com/che-incubator/kubernetes-image-puller-operator
 
-go 1.22.0
+go 1.26.4
 
 require (
 	github.com/go-logr/logr v1.4.2
