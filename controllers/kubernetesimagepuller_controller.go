@@ -68,29 +68,21 @@ func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctr
 		return ctrl.Result{}, err
 	}
 
-	// If there is no set configmap name, update with the default configmap name
+	// Set defaults for any unset spec fields in a single update
+	needsUpdate := false
 	if instance.Spec.ConfigMapName == "" {
 		instance.Spec.ConfigMapName = "k8s-image-puller"
-		if err = r.Update(ctx, instance); err != nil {
-			log.Error(err, "Error updating KubernetesImagePuller")
-			return ctrl.Result{}, err
-		}
-		return ctrl.Result{}, nil
+		needsUpdate = true
 	}
-
-	// If there is no set deployment name, update with the default deployment name
 	if instance.Spec.DeploymentName == "" {
 		instance.Spec.DeploymentName = "kubernetes-image-puller"
-		if err = r.Update(ctx, instance); err != nil {
-			log.Error(err, "Error updating KubernetesImagePuller")
-			return ctrl.Result{}, err
-		}
-		return ctrl.Result{}, nil
+		needsUpdate = true
 	}
-
-	// If there is no image puller image set, update with the default image puller image
 	if instance.Spec.ImagePullerImage == "" {
 		instance.Spec.ImagePullerImage = "quay.io/eclipse/kubernetes-image-puller:next"
+		needsUpdate = true
+	}
+	if needsUpdate {
 		if err = r.Update(ctx, instance); err != nil {
 			log.Error(err, "Error updating KubernetesImagePuller")
 			return ctrl.Result{}, err

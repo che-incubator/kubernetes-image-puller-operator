@@ -115,7 +115,7 @@ func defaultImagePuller() *chev1alpha1.KubernetesImagePuller {
 	}
 }
 
-func defaultImagePullerWithConfigMapName() *chev1alpha1.KubernetesImagePuller {
+func defaultImagePullerWithAllDefaults() *chev1alpha1.KubernetesImagePuller {
 	return &chev1alpha1.KubernetesImagePuller{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "KubernetesImagePuller",
@@ -127,25 +127,9 @@ func defaultImagePullerWithConfigMapName() *chev1alpha1.KubernetesImagePuller {
 			ResourceVersion: "1",
 		},
 		Spec: chev1alpha1.KubernetesImagePullerSpec{
-			ConfigMapName: defaultConfigMapName,
-		},
-	}
-}
-
-func defaultImagePullerWithConfigMapAndDeploymentName() *chev1alpha1.KubernetesImagePuller {
-	return &chev1alpha1.KubernetesImagePuller{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "KubernetesImagePuller",
-			APIVersion: chev1alpha1.SchemeBuilder.GroupVersion.String(),
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            "test-puller",
-			Namespace:       namespace,
-			ResourceVersion: "2",
-		},
-		Spec: chev1alpha1.KubernetesImagePullerSpec{
-			ConfigMapName:  defaultConfigMapName,
-			DeploymentName: defaultDeploymentName,
+			ConfigMapName:    defaultConfigMapName,
+			DeploymentName:   defaultDeploymentName,
+			ImagePullerImage: defaultImagePullerImage,
 		},
 	}
 }
@@ -193,75 +177,10 @@ func setupClient(t *testing.T, objs ...client.Object) client.Client {
 		Build()
 }
 
-func TestSetsConfigMapName(t *testing.T) {
+func TestSetsAllDefaults(t *testing.T) {
 	client := setupClient(t, defaultImagePuller())
 	got := &chev1alpha1.KubernetesImagePuller{}
-	want := defaultImagePullerWithConfigMapName()
-
-	r := &KubernetesImagePullerReconciler{
-		Client: client,
-		Scheme: scheme.Scheme,
-		Log:    ctrl.Log.WithName("controllers").WithName("kubernetesimagepuller"),
-	}
-
-	_, err := r.Reconcile(context.TODO(), ctrl.Request{NamespacedName: key})
-	if err != nil {
-		t.Errorf("Got error in reconcile: %v", err)
-	}
-
-	if err := client.Get(context.TODO(), types.NamespacedName{Namespace: namespace, Name: "test-puller"}, got); err != nil {
-		t.Errorf("Error getting KubernetesImagePuller")
-	}
-
-	if d := cmp.Diff(want, got); d != "" {
-		t.Errorf("Error (-want, +got): %s", d)
-	}
-}
-
-func TestSetsDeploymentName(t *testing.T) {
-	client := setupClient(t, defaultImagePullerWithConfigMapName())
-	got := &chev1alpha1.KubernetesImagePuller{}
-	want := defaultImagePullerWithConfigMapAndDeploymentName()
-
-	r := &KubernetesImagePullerReconciler{
-		Client: client,
-		Scheme: scheme.Scheme,
-		Log:    ctrl.Log.WithName("controllers").WithName("kubernetesimagepuller"),
-	}
-
-	_, err := r.Reconcile(context.TODO(), ctrl.Request{NamespacedName: key})
-	if err != nil {
-		t.Errorf("Got error in reconcile: %v", err)
-	}
-
-	if err := client.Get(context.TODO(), types.NamespacedName{Namespace: namespace, Name: "test-puller"}, got); err != nil {
-		t.Errorf("Error getting KubernetesImagePuller")
-	}
-
-	if d := cmp.Diff(want, got); d != "" {
-		t.Errorf("Error (-want, +got): %s", d)
-	}
-}
-
-func TestSetsImagePullerImage(t *testing.T) {
-	client := setupClient(t, defaultImagePullerWithConfigMapAndDeploymentName())
-	got := &chev1alpha1.KubernetesImagePuller{}
-	want := &chev1alpha1.KubernetesImagePuller{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "KubernetesImagePuller",
-			APIVersion: chev1alpha1.SchemeBuilder.GroupVersion.String(),
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            "test-puller",
-			Namespace:       namespace,
-			ResourceVersion: "3",
-		},
-		Spec: chev1alpha1.KubernetesImagePullerSpec{
-			ConfigMapName:    defaultConfigMapName,
-			DeploymentName:   defaultDeploymentName,
-			ImagePullerImage: defaultImagePullerImage,
-		},
-	}
+	want := defaultImagePullerWithAllDefaults()
 
 	r := &KubernetesImagePullerReconciler{
 		Client: client,
@@ -820,7 +739,7 @@ func TestUpdatesConfigMap(t *testing.T) {
 		},
 		{
 			name: "change the configmap name",
-			old:  expectedConfigMap(defaultImagePullerWithConfigMapAndDeploymentName()),
+			old:  expectedConfigMap(defaultImagePullerWithAllDefaults()),
 			cr: &chev1alpha1.KubernetesImagePuller{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: namespace,
@@ -901,7 +820,7 @@ func TestDeletesOldDeploymentOnNameChange(t *testing.T) {
 
 	for _, tc := range []testcase{{
 		name:  "change the deployment name",
-		oldCr: defaultImagePullerWithConfigMapAndDeploymentName(),
+		oldCr: defaultImagePullerWithAllDefaults(),
 		newCr: &chev1alpha1.KubernetesImagePuller{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: namespace,
