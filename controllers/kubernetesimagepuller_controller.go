@@ -14,6 +14,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
 	chev1alpha1 "github.com/che-incubator/kubernetes-image-puller-operator/api/v1alpha1"
 	"github.com/che-incubator/kubernetes-image-puller-operator/pkg/config"
@@ -50,11 +51,11 @@ type KubernetesImagePullerReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.8.3/pkg/reconcile
 func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = r.Log.WithValues("kubernetesimagepuller", req.NamespacedName)
+	log := r.Log.WithValues("kubernetesimagepuller", req.NamespacedName)
 
 	// Fetch the KubernetesImagePuller instance
 	instance := &chev1alpha1.KubernetesImagePuller{}
-	err := r.Get(context.TODO(), req.NamespacedName, instance)
+	err := r.Get(ctx, req.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
@@ -69,8 +70,8 @@ func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctr
 	// If there is no set configmap name, update with the default configmap name
 	if instance.Spec.ConfigMapName == "" {
 		instance.Spec.ConfigMapName = "k8s-image-puller"
-		if err = r.Update(context.TODO(), instance); err != nil {
-			r.Log.Error(err, "Error updating KubernetesImagePuller")
+		if err = r.Update(ctx, instance); err != nil {
+			log.Error(err, "Error updating KubernetesImagePuller")
 			return ctrl.Result{}, err
 		}
 		return ctrl.Result{}, nil
@@ -79,8 +80,8 @@ func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctr
 	// If there is no set deployment name, update with the default deployment name
 	if instance.Spec.DeploymentName == "" {
 		instance.Spec.DeploymentName = "kubernetes-image-puller"
-		if err = r.Update(context.TODO(), instance); err != nil {
-			r.Log.Error(err, "Error updating KubernetesImagePuller")
+		if err = r.Update(ctx, instance); err != nil {
+			log.Error(err, "Error updating KubernetesImagePuller")
 			return ctrl.Result{}, err
 		}
 		return ctrl.Result{}, nil
@@ -89,8 +90,8 @@ func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctr
 	// If there is no image puller image set, update with the default image puller image
 	if instance.Spec.ImagePullerImage == "" {
 		instance.Spec.ImagePullerImage = "quay.io/eclipse/kubernetes-image-puller:next"
-		if err = r.Update(context.TODO(), instance); err != nil {
-			r.Log.Error(err, "Error updating KubernetesImagePuller")
+		if err = r.Update(ctx, instance); err != nil {
+			log.Error(err, "Error updating KubernetesImagePuller")
 			return ctrl.Result{}, err
 		}
 		return ctrl.Result{}, nil
@@ -98,33 +99,33 @@ func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctr
 
 	// Create the Role to allow the ServiceAccount to create Daemonsets
 	foundRole := &rbacv1.Role{}
-	err = r.Get(context.TODO(), types.NamespacedName{Namespace: instance.Namespace, Name: "create-daemonset"}, foundRole)
+	err = r.Get(ctx, types.NamespacedName{Namespace: instance.Namespace, Name: "create-daemonset"}, foundRole)
 	if err != nil && errors.IsNotFound(err) {
-		r.Log.Info("Creating create-daemonset role")
-		if err = r.Create(context.TODO(), rbac.NewRole(instance)); err != nil {
-			r.Log.Error(err, "Error creating create-daemonset role")
+		log.Info("Creating create-daemonset role")
+		if err = r.Create(ctx, rbac.NewRole(instance)); err != nil {
+			log.Error(err, "Error creating create-daemonset role")
 			return ctrl.Result{}, err
 		}
 		return ctrl.Result{Requeue: true}, nil
 	}
 
 	foundRoleBinding := &rbacv1.RoleBinding{}
-	err = r.Get(context.TODO(), types.NamespacedName{Namespace: instance.Namespace, Name: "create-daemonset"}, foundRoleBinding)
+	err = r.Get(ctx, types.NamespacedName{Namespace: instance.Namespace, Name: "create-daemonset"}, foundRoleBinding)
 	if err != nil && errors.IsNotFound(err) {
-		r.Log.Info("Creating create-daemonset RoleBinding")
-		if err = r.Create(context.TODO(), rbac.NewRoleBinding(instance)); err != nil {
-			r.Log.Error(err, "Error creating create-daemonset RoleBinding")
+		log.Info("Creating create-daemonset RoleBinding")
+		if err = r.Create(ctx, rbac.NewRoleBinding(instance)); err != nil {
+			log.Error(err, "Error creating create-daemonset RoleBinding")
 			return ctrl.Result{}, err
 		}
 		return ctrl.Result{Requeue: true}, nil
 	}
 
 	foundServiceAccount := &corev1.ServiceAccount{}
-	err = r.Get(context.TODO(), types.NamespacedName{Namespace: instance.Namespace, Name: "k8s-image-puller"}, foundServiceAccount)
+	err = r.Get(ctx, types.NamespacedName{Namespace: instance.Namespace, Name: "k8s-image-puller"}, foundServiceAccount)
 	if err != nil && errors.IsNotFound(err) {
-		r.Log.Info("Creating k8s-image-puller ServiceAccount")
-		if err = r.Create(context.TODO(), rbac.NewServiceAccount(instance)); err != nil {
-			r.Log.Error(err, "Error creating k8s-image-puller ServiceAccount")
+		log.Info("Creating k8s-image-puller ServiceAccount")
+		if err = r.Create(ctx, rbac.NewServiceAccount(instance)); err != nil {
+			log.Error(err, "Error creating k8s-image-puller ServiceAccount")
 			return ctrl.Result{}, err
 		}
 		return ctrl.Result{Requeue: true}, nil
@@ -132,10 +133,10 @@ func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctr
 
 	// Create the configmap if it does not exist
 	foundConfigMap := &corev1.ConfigMap{}
-	err = r.Get(context.TODO(), types.NamespacedName{Name: instance.Spec.ConfigMapName, Namespace: instance.Namespace}, foundConfigMap)
+	err = r.Get(ctx, types.NamespacedName{Name: instance.Spec.ConfigMapName, Namespace: instance.Namespace}, foundConfigMap)
 	if err != nil && errors.IsNotFound(err) {
-		r.Log.Info("Creating kubernetes image puller ConfigMap", "ConfigMap.Namespace", instance.Namespace)
-		err = r.Create(context.TODO(), config.NewImagePullerConfigMap(instance))
+		log.Info("Creating kubernetes image puller ConfigMap", "ConfigMap.Namespace", instance.Namespace)
+		err = r.Create(ctx, config.NewImagePullerConfigMap(instance))
 		if err != nil {
 			return ctrl.Result{}, err
 		}
@@ -147,33 +148,38 @@ func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctr
 
 	// If there is an existing deployment, roll it out on configmap change
 	oldDeployment := &appsv1.Deployment{}
-	if err = r.Get(context.TODO(), types.NamespacedName{Name: instance.Spec.DeploymentName, Namespace: instance.Namespace}, oldDeployment); err != nil && !errors.IsNotFound(err) {
-		r.Log.Error(err, "Error getting deployment")
+	if err = r.Get(ctx, types.NamespacedName{Name: instance.Spec.DeploymentName, Namespace: instance.Namespace}, oldDeployment); err != nil && !errors.IsNotFound(err) {
+		log.Error(err, "Error getting deployment")
 		return ctrl.Result{}, err
 	} else if err == nil {
-		if config.ConfigMapsDiffer(config.NewImagePullerConfigMap(instance), foundConfigMap) || GetDeploymentConfigMapName(oldDeployment) != foundConfigMap.Name {
-			if GetDeploymentConfigMapName(oldDeployment) == foundConfigMap.Name {
+		oldConfigMapName, err := GetDeploymentConfigMapName(oldDeployment)
+		if err != nil {
+			log.Error(err, "Error reading configmap name from deployment")
+			return ctrl.Result{}, err
+		}
+		if config.ConfigMapsDiffer(config.NewImagePullerConfigMap(instance), foundConfigMap) || oldConfigMapName != foundConfigMap.Name {
+			if oldConfigMapName == foundConfigMap.Name {
 				// ConfigMap names are the same, delete pods and let the new pods pick up the new configmap
 
 				pods := &corev1.PodList{}
-				if err = r.List(context.TODO(), pods, client.MatchingLabels{"app": "kubernetes-image-puller"}); err != nil {
-					r.Log.Error(err, "Error listing pods")
+				if err = r.List(ctx, pods, client.MatchingLabels{"app": "kubernetes-image-puller"}); err != nil {
+					log.Error(err, "Error listing pods")
 					return ctrl.Result{}, err
 				}
 				if len(pods.Items) > 0 {
 					for _, pod := range pods.Items {
-						r.Log.Info("Deleting pod", "Pod.Name", pod.Name)
-						if err = r.Delete(context.TODO(), &pod); err != nil {
-							r.Log.Error(err, "Error deleting pod", "Pod.Name", pod.Name)
+						log.Info("Deleting pod", "Pod.Name", pod.Name)
+						if err = r.Delete(ctx, &pod); err != nil {
+							log.Error(err, "Error deleting pod", "Pod.Name", pod.Name)
 							return ctrl.Result{}, err
 						}
 					}
 				}
 				// ConfigMap names are different, just run an update
 			} else {
-				err = r.Update(context.TODO(), NewImagePullerDeployment(instance))
+				err = r.Update(ctx, NewImagePullerDeployment(instance))
 				if err != nil {
-					r.Log.Error(err, "Error updating deployment")
+					log.Error(err, "Error updating deployment")
 					return ctrl.Result{}, err
 				}
 			}
@@ -183,8 +189,8 @@ func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctr
 	// If the configmap has already been created and the values have changed, update the configmap.
 	newConfigMap := config.NewImagePullerConfigMap(instance)
 	if config.ConfigMapsDiffer(newConfigMap, foundConfigMap) {
-		if err = r.Update(context.TODO(), newConfigMap); err != nil {
-			r.Log.Error(err, "Error updating configmap")
+		if err = r.Update(ctx, newConfigMap); err != nil {
+			log.Error(err, "Error updating configmap")
 			return ctrl.Result{}, err
 		}
 
@@ -193,16 +199,16 @@ func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctr
 
 	// Find all configmaps owned by this imagepuller and delete ones that are not named ConfigMapName
 	configMaps := &corev1.ConfigMapList{}
-	if err = r.List(context.TODO(), configMaps, client.MatchingLabels{"app": "kubernetes-image-puller"}); err != nil {
-		r.Log.Error(err, "Could not list ConfigMaps")
+	if err = r.List(ctx, configMaps, client.MatchingLabels{"app": "kubernetes-image-puller"}); err != nil {
+		log.Error(err, "Could not list ConfigMaps")
 		return ctrl.Result{}, err
 	} else {
 
 		for _, cm := range configMaps.Items {
 			if cm.Name != instance.Spec.ConfigMapName && len(cm.ObjectMeta.OwnerReferences) > 0 {
 				if cm.ObjectMeta.OwnerReferences[0].Name == instance.Name {
-					if err = r.Delete(context.TODO(), &cm); err != nil {
-						r.Log.Error(err, "Could not delete ConfigMap")
+					if err = r.Delete(ctx, &cm); err != nil {
+						log.Error(err, "Could not delete ConfigMap")
 						return ctrl.Result{}, err
 					}
 				}
@@ -213,12 +219,12 @@ func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctr
 	// Create a new ConfigMap if the names differ
 	if foundConfigMap.Name != instance.Spec.ConfigMapName {
 		newConfigMap := config.NewImagePullerConfigMap(instance)
-		if err = r.Create(context.TODO(), newConfigMap); err != nil {
-			r.Log.Error(err, "Could not create new ConfigMap")
+		if err = r.Create(ctx, newConfigMap); err != nil {
+			log.Error(err, "Could not create new ConfigMap")
 			return ctrl.Result{}, err
 		}
-		if err = r.Delete(context.TODO(), foundConfigMap); err != nil {
-			r.Log.Error(err, "Could not delete old ConfigMap")
+		if err = r.Delete(ctx, foundConfigMap); err != nil {
+			log.Error(err, "Could not delete old ConfigMap")
 			return ctrl.Result{}, err
 		}
 		return ctrl.Result{}, nil
@@ -226,18 +232,18 @@ func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctr
 
 	// Check if kubernetes image puller deployment exists, and create it if it does not.
 	foundDeployment := &appsv1.Deployment{}
-	err = r.Get(context.TODO(), types.NamespacedName{Name: instance.Spec.DeploymentName, Namespace: instance.Namespace}, foundDeployment)
+	err = r.Get(ctx, types.NamespacedName{Name: instance.Spec.DeploymentName, Namespace: instance.Namespace}, foundDeployment)
 	if err != nil && errors.IsNotFound(err) {
-		r.Log.Info("Creating kubernetes image puller deployment", "Deployment.Namespace", instance.Namespace)
-		err = r.Create(context.TODO(), NewImagePullerDeployment(instance))
+		log.Info("Creating kubernetes image puller deployment", "Deployment.Namespace", instance.Namespace)
+		err = r.Create(ctx, NewImagePullerDeployment(instance))
 		if err != nil {
-			r.Log.Error(err, "Could not create deployment")
+			log.Error(err, "Could not create deployment")
 			return ctrl.Result{}, err
 		}
 
 		return ctrl.Result{}, nil
 	} else if err != nil {
-		r.Log.Error(err, "Could not get deployment")
+		log.Error(err, "Could not get deployment")
 		return ctrl.Result{}, err
 	}
 
@@ -247,19 +253,19 @@ func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctr
 		Namespace:     instance.Namespace,
 		LabelSelector: labels.SelectorFromValidatedSet(map[string]string{"app": "kubernetes-image-puller"}),
 	}
-	err = r.List(context.TODO(), deployments, listOptions)
+	err = r.List(ctx, deployments, listOptions)
 	if err != nil {
-		r.Log.Error(err, "Error listing deployments")
+		log.Error(err, "Error listing deployments")
 		return ctrl.Result{}, err
 	}
 	// If more than one deployment found in list, delete all deployments not named instance.Spec.DeploymentName
 	if len(deployments.Items) > 1 {
 		for _, deployment := range deployments.Items {
 			if deployment.Name != instance.Spec.DeploymentName {
-				r.Log.Info("Deleting old deployment", "Deployment.Name", deployment.Name)
-				err = r.Delete(context.TODO(), &deployment)
+				log.Info("Deleting old deployment", "Deployment.Name", deployment.Name)
+				err = r.Delete(ctx, &deployment)
 				if err != nil {
-					r.Log.Error(err, "Could not delete deployment")
+					log.Error(err, "Could not delete deployment")
 					return ctrl.Result{}, err
 				}
 			}
@@ -269,21 +275,21 @@ func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctr
 	// If ImagePullerImage from deployment is different than the spec, update deployment
 	if instance.Spec.ImagePullerImage != instance.Status.ImagePullerImage {
 		instance.Status.ImagePullerImage = instance.Spec.ImagePullerImage
-		err = r.Status().Update(context.TODO(), instance)
+		err = r.Status().Update(ctx, instance)
 		if err != nil {
-			r.Log.Error(err, "Error updating custom resource status")
+			log.Error(err, "Error updating custom resource status")
 			return ctrl.Result{}, err
 		}
 
-		err = r.Update(context.TODO(), NewImagePullerDeployment(instance))
+		err = r.Update(ctx, NewImagePullerDeployment(instance))
 		if err != nil {
-			r.Log.Error(err, "Error updating deployment")
+			log.Error(err, "Error updating deployment")
 			return ctrl.Result{}, err
 		}
 	}
 
 	// Everything already exists
-	r.Log.Info("End Reconcile")
+	log.Info("End Reconcile")
 
 	return ctrl.Result{}, nil
 }
@@ -340,9 +346,16 @@ func NewImagePullerDeployment(cr *chev1alpha1.KubernetesImagePuller) *appsv1.Dep
 	}
 }
 
-// Returns the name of the configmap used as an environment source
-func GetDeploymentConfigMapName(deployment *appsv1.Deployment) string {
-	return deployment.Spec.Template.Spec.Containers[0].EnvFrom[0].ConfigMapRef.Name
+func GetDeploymentConfigMapName(deployment *appsv1.Deployment) (string, error) {
+	containers := deployment.Spec.Template.Spec.Containers
+	if len(containers) == 0 {
+		return "", fmt.Errorf("deployment %s/%s has no containers", deployment.Namespace, deployment.Name)
+	}
+	envFrom := containers[0].EnvFrom
+	if len(envFrom) == 0 || envFrom[0].ConfigMapRef == nil {
+		return "", fmt.Errorf("deployment %s/%s has no configmap env source", deployment.Namespace, deployment.Name)
+	}
+	return envFrom[0].ConfigMapRef.Name, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
