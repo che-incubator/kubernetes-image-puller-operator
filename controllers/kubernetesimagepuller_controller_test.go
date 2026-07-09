@@ -530,7 +530,7 @@ func TestCreatesConfigMap(t *testing.T) {
 			want: &corev1.ConfigMap{
 				Data: map[string]string{
 					"CACHING_INTERVAL_HOURS": "1",
-					"CACHING_MEMORY_LIMIT":   "30Mi",
+					"CACHING_MEMORY_LIMIT":   "20Mi",
 					"CACHING_MEMORY_REQUEST": "10Mi",
 					"CACHING_CPU_LIMIT":      ".2",
 					"CACHING_CPU_REQUEST":    ".05",
@@ -579,7 +579,7 @@ func TestCreatesConfigMap(t *testing.T) {
 			want: &corev1.ConfigMap{
 				Data: map[string]string{
 					"CACHING_INTERVAL_HOURS": "1",
-					"CACHING_MEMORY_LIMIT":   "30Mi",
+					"CACHING_MEMORY_LIMIT":   "20Mi",
 					"CACHING_MEMORY_REQUEST": "10Mi",
 					"CACHING_CPU_LIMIT":      ".2",
 					"CACHING_CPU_REQUEST":    ".05",
@@ -626,7 +626,7 @@ func TestCreatesConfigMap(t *testing.T) {
 			want: &corev1.ConfigMap{
 				Data: map[string]string{
 					"CACHING_INTERVAL_HOURS": "1",
-					"CACHING_MEMORY_LIMIT":   "30Mi",
+					"CACHING_MEMORY_LIMIT":   "20Mi",
 					"CACHING_MEMORY_REQUEST": "10Mi",
 					"CACHING_CPU_LIMIT":      ".2",
 					"CACHING_CPU_REQUEST":    ".05",
@@ -721,7 +721,7 @@ func TestUpdatesConfigMap(t *testing.T) {
 				},
 				Data: map[string]string{
 					"CACHING_INTERVAL_HOURS": "1",
-					"CACHING_MEMORY_LIMIT":   "30Mi",
+					"CACHING_MEMORY_LIMIT":   "20Mi",
 					"CACHING_MEMORY_REQUEST": "10Mi",
 					"CACHING_CPU_LIMIT":      ".2",
 					"CACHING_CPU_REQUEST":    ".05",
@@ -766,7 +766,7 @@ func TestUpdatesConfigMap(t *testing.T) {
 				},
 				Data: map[string]string{
 					"CACHING_INTERVAL_HOURS": "1",
-					"CACHING_MEMORY_LIMIT":   "30Mi",
+					"CACHING_MEMORY_LIMIT":   "20Mi",
 					"CACHING_MEMORY_REQUEST": "10Mi",
 					"CACHING_CPU_LIMIT":      ".2",
 					"CACHING_CPU_REQUEST":    ".05",
