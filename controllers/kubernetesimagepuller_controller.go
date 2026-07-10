@@ -18,6 +18,7 @@ import (
 
 	chev1alpha1 "github.com/che-incubator/kubernetes-image-puller-operator/api/v1alpha1"
 	"github.com/che-incubator/kubernetes-image-puller-operator/pkg/config"
+	"github.com/che-incubator/kubernetes-image-puller-operator/pkg/defaults"
 	"github.com/che-incubator/kubernetes-image-puller-operator/pkg/rbac"
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
@@ -71,15 +72,15 @@ func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctr
 	// Set defaults for any unset spec fields in a single update
 	needsUpdate := false
 	if instance.Spec.ConfigMapName == "" {
-		instance.Spec.ConfigMapName = "k8s-image-puller"
+		instance.Spec.ConfigMapName = defaults.ConfigMapName
 		needsUpdate = true
 	}
 	if instance.Spec.DeploymentName == "" {
-		instance.Spec.DeploymentName = "kubernetes-image-puller"
+		instance.Spec.DeploymentName = defaults.DeploymentName
 		needsUpdate = true
 	}
 	if instance.Spec.ImagePullerImage == "" {
-		instance.Spec.ImagePullerImage = "quay.io/eclipse/kubernetes-image-puller:next"
+		instance.Spec.ImagePullerImage = defaults.ImagePullerImage
 		needsUpdate = true
 	}
 	if needsUpdate {
@@ -92,7 +93,7 @@ func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctr
 
 	// Create the Role to allow the ServiceAccount to create Daemonsets
 	foundRole := &rbacv1.Role{}
-	err = r.Get(ctx, types.NamespacedName{Namespace: instance.Namespace, Name: "create-daemonset"}, foundRole)
+	err = r.Get(ctx, types.NamespacedName{Namespace: instance.Namespace, Name: defaults.RBACName}, foundRole)
 	if err != nil && errors.IsNotFound(err) {
 		log.Info("Creating create-daemonset role")
 		if err = r.Create(ctx, rbac.NewRole(instance)); err != nil {
@@ -103,7 +104,7 @@ func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctr
 	}
 
 	foundRoleBinding := &rbacv1.RoleBinding{}
-	err = r.Get(ctx, types.NamespacedName{Namespace: instance.Namespace, Name: "create-daemonset"}, foundRoleBinding)
+	err = r.Get(ctx, types.NamespacedName{Namespace: instance.Namespace, Name: defaults.RBACName}, foundRoleBinding)
 	if err != nil && errors.IsNotFound(err) {
 		log.Info("Creating create-daemonset RoleBinding")
 		if err = r.Create(ctx, rbac.NewRoleBinding(instance)); err != nil {
@@ -114,7 +115,7 @@ func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctr
 	}
 
 	foundServiceAccount := &corev1.ServiceAccount{}
-	err = r.Get(ctx, types.NamespacedName{Namespace: instance.Namespace, Name: "k8s-image-puller"}, foundServiceAccount)
+	err = r.Get(ctx, types.NamespacedName{Namespace: instance.Namespace, Name: defaults.ServiceAccountName}, foundServiceAccount)
 	if err != nil && errors.IsNotFound(err) {
 		log.Info("Creating k8s-image-puller ServiceAccount")
 		if err = r.Create(ctx, rbac.NewServiceAccount(instance)); err != nil {
@@ -155,7 +156,7 @@ func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctr
 				// ConfigMap names are the same, delete pods and let the new pods pick up the new configmap
 
 				pods := &corev1.PodList{}
-				if err = r.List(ctx, pods, client.MatchingLabels{"app": "kubernetes-image-puller"}); err != nil {
+				if err = r.List(ctx, pods, client.MatchingLabels{"app": defaults.AppLabelValue}); err != nil {
 					log.Error(err, "Error listing pods")
 					return ctrl.Result{}, err
 				}
@@ -192,7 +193,7 @@ func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctr
 
 	// Find all configmaps owned by this imagepuller and delete ones that are not named ConfigMapName
 	configMaps := &corev1.ConfigMapList{}
-	if err = r.List(ctx, configMaps, client.MatchingLabels{"app": "kubernetes-image-puller"}); err != nil {
+	if err = r.List(ctx, configMaps, client.MatchingLabels{"app": defaults.AppLabelValue}); err != nil {
 		log.Error(err, "Could not list ConfigMaps")
 		return ctrl.Result{}, err
 	} else {
@@ -244,7 +245,7 @@ func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctr
 	deployments := &appsv1.DeploymentList{}
 	listOptions := &client.ListOptions{
 		Namespace:     instance.Namespace,
-		LabelSelector: labels.SelectorFromValidatedSet(map[string]string{"app": "kubernetes-image-puller"}),
+		LabelSelector: labels.SelectorFromValidatedSet(map[string]string{"app": defaults.AppLabelValue}),
 	}
 	err = r.List(ctx, deployments, listOptions)
 	if err != nil {
@@ -294,7 +295,7 @@ func NewImagePullerDeployment(cr *chev1alpha1.KubernetesImagePuller) *appsv1.Dep
 	readOnlyRootFilesystem := true
 	var deploymentName string
 	if cr.Spec.DeploymentName == "" {
-		deploymentName = "kubernetes-image-puller"
+		deploymentName = defaults.DeploymentName
 	} else {
 		deploymentName = cr.Spec.DeploymentName
 	}
@@ -303,7 +304,7 @@ func NewImagePullerDeployment(cr *chev1alpha1.KubernetesImagePuller) *appsv1.Dep
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: cr.Namespace,
 			Name:      deploymentName,
-			Labels:    map[string]string{"app": "kubernetes-image-puller"},
+			Labels:    map[string]string{"app": defaults.AppLabelValue},
 			OwnerReferences: []metav1.OwnerReference{
 				*metav1.NewControllerRef(cr, chev1alpha1.SchemeBuilder.GroupVersion.WithKind("KubernetesImagePuller")),
 			},
@@ -311,14 +312,14 @@ func NewImagePullerDeployment(cr *chev1alpha1.KubernetesImagePuller) *appsv1.Dep
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &replicas,
 			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{"app": "kubernetes-image-puller"},
+				MatchLabels: map[string]string{"app": defaults.AppLabelValue},
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{"app": "kubernetes-image-puller"},
+					Labels: map[string]string{"app": defaults.AppLabelValue},
 				},
 				Spec: corev1.PodSpec{
-					ServiceAccountName: "k8s-image-puller",
+					ServiceAccountName: defaults.ServiceAccountName,
 					SecurityContext: &corev1.PodSecurityContext{
 						RunAsNonRoot: &runAsNonRoot,
 						SeccompProfile: &corev1.SeccompProfile{
@@ -327,7 +328,7 @@ func NewImagePullerDeployment(cr *chev1alpha1.KubernetesImagePuller) *appsv1.Dep
 					},
 					Containers: []corev1.Container{
 						{
-							Name:  "kubernetes-image-puller",
+							Name:  defaults.ContainerName,
 							Image: cr.Spec.ImagePullerImage,
 							SecurityContext: &corev1.SecurityContext{
 								AllowPrivilegeEscalation: &allowPrivilegeEscalation,

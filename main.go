@@ -41,6 +41,7 @@ import (
 
 	orgv1alpha1 "github.com/che-incubator/kubernetes-image-puller-operator/api/v1alpha1"
 	"github.com/che-incubator/kubernetes-image-puller-operator/controllers"
+	"github.com/che-incubator/kubernetes-image-puller-operator/pkg/defaults"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -100,7 +101,7 @@ func main() {
 			"the manager will watch and manage resources in all Namespaces")
 	}
 
-	kubernetesImagePullerApp, err := labels.NewRequirement("app", selection.Equals, []string{"kubernetes-image-puller"})
+	kubernetesImagePullerApp, err := labels.NewRequirement("app", selection.Equals, []string{defaults.AppLabelValue})
 	if err != nil {
 		setupLog.Error(err, "failed to create label requirement")
 		os.Exit(1)

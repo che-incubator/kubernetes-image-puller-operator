@@ -16,6 +16,7 @@ import (
 	"reflect"
 
 	chev1alpha1 "github.com/che-incubator/kubernetes-image-puller-operator/api/v1alpha1"
+	"github.com/che-incubator/kubernetes-image-puller-operator/pkg/defaults"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -30,7 +31,7 @@ func NewImagePullerConfigMap(instance *chev1alpha1.KubernetesImagePuller) *corev
 }
 
 func DefaultImagePullerConfigMap(namespace string, name string) *corev1.ConfigMap {
-	configMapName := "k8s-image-puller"
+	configMapName := defaults.ConfigMapName
 	if name != "" {
 		configMapName = name
 	}
@@ -43,11 +44,11 @@ func DefaultImagePullerConfigMap(namespace string, name string) *corev1.ConfigMa
 			Name:      configMapName,
 			Namespace: namespace,
 			Labels: map[string]string{
-				"app": "kubernetes-image-puller",
+				"app": defaults.AppLabelValue,
 			},
 		},
 		Data: map[string]string{
-			"DAEMONSET_NAME":         "kubernetes-image-puller",
+			"DAEMONSET_NAME":         defaults.DaemonSetName,
 			"IMAGES":                 "java11-maven=quay.io/eclipse/che-java11-maven:next;che-theia=quay.io/eclipse/che-theia:next;java-plugin-runner=eclipse/che-remote-plugin-runner-java8:latest",
 			"CACHING_INTERVAL_HOURS": "1",
 			"CACHING_MEMORY_REQUEST": "10Mi",
@@ -58,7 +59,7 @@ func DefaultImagePullerConfigMap(namespace string, name string) *corev1.ConfigMa
 			"IMAGE_PULL_SECRETS":     "",
 			"AFFINITY":               "{}",
 			"TOLERATIONS":            "[]",
-			"KIP_IMAGE":              "quay.io/eclipse/kubernetes-image-puller:next",
+			"KIP_IMAGE":              defaults.ImagePullerImage,
 			"NAMESPACE":              namespace,
 		},
 	}
