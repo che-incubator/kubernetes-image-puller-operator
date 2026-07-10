@@ -162,7 +162,7 @@ func expectedDeployment(cr *chev1alpha1.KubernetesImagePuller) *appsv1.Deploymen
 
 func expectedConfigMap(cr *chev1alpha1.KubernetesImagePuller) *corev1.ConfigMap {
 	configMap := config.NewImagePullerConfigMap(cr)
-	configMap.ObjectMeta.OwnerReferences = []metav1.OwnerReference{defaultCROwnerReference}
+	configMap.OwnerReferences = []metav1.OwnerReference{defaultCROwnerReference}
 	configMap.ResourceVersion = "1"
 	return configMap
 }
@@ -845,8 +845,7 @@ func TestDeletesOldDeploymentOnNameChange(t *testing.T) {
 				t.Errorf("Got error in reconcile: %v", err)
 			}
 			deployments := &appsv1.DeploymentList{}
-			c.List(context.TODO(), deployments, client.MatchingLabels{"app": defaults.AppLabelValue})
-			if err != nil {
+			if err = c.List(context.TODO(), deployments, client.MatchingLabels{"app": defaults.AppLabelValue}); err != nil {
 				t.Errorf("Error listing deployments: %v", err)
 			}
 			if len(deployments.Items) != 1 {

@@ -24,7 +24,7 @@ import (
 func NewImagePullerConfigMap(instance *chev1alpha1.KubernetesImagePuller) *corev1.ConfigMap {
 	defaultConfigMap := DefaultImagePullerConfigMap(instance.Namespace, instance.Spec.ConfigMapName)
 	newConfigMap := mergeConfigMapWithCR(instance, defaultConfigMap)
-	newConfigMap.ObjectMeta.OwnerReferences = []metav1.OwnerReference{
+	newConfigMap.OwnerReferences = []metav1.OwnerReference{
 		*metav1.NewControllerRef(instance, chev1alpha1.SchemeBuilder.GroupVersion.WithKind("KubernetesImagePuller")),
 	}
 	return newConfigMap
