@@ -68,7 +68,8 @@ var _ = BeforeSuite(func() {
 		},
 	}
 
-	cfg, err := testEnv.Start()
+	var err error
+	cfg, err = testEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
 
@@ -124,7 +125,7 @@ var _ = BeforeSuite(func() {
 		if err != nil {
 			return err
 		}
-		conn.Close()
+		_ = conn.Close()
 		return nil
 	}).Should(Succeed())
 
@@ -150,7 +151,7 @@ var _ = Describe("Create KubernetesImagePuller resource", func() {
 
 	It("Should not be able to create a second KubernetesImagePuller resource in the same namespace", func() {
 		secondKip := kip.DeepCopy()
-		secondKip.ObjectMeta.Name = secondKip.ObjectMeta.Name + "-different"
+		secondKip.Name = secondKip.Name + "-different"
 
 		Expect(k8sClient.Create(ctx, kip)).Should(Succeed())
 		err := k8sClient.Create(ctx, secondKip)
@@ -160,11 +161,11 @@ var _ = Describe("Create KubernetesImagePuller resource", func() {
 
 	It("Should be able to create a second KubernetesImagePuller resource in a different namespace", func() {
 		secondKip := kip.DeepCopy()
-		secondKip.ObjectMeta.Name = secondKip.ObjectMeta.Name + "-different"
-		secondKip.ObjectMeta.Namespace = secondKip.ObjectMeta.Namespace + "-different"
+		secondKip.Name = secondKip.Name + "-different"
+		secondKip.Namespace = secondKip.Namespace + "-different"
 		newNamespace := &v1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: secondKip.ObjectMeta.Namespace,
+				Name: secondKip.Namespace,
 			},
 		}
 		Expect(k8sClient.Create(ctx, newNamespace)).Should(Succeed())

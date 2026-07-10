@@ -199,8 +199,8 @@ func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctr
 	} else {
 
 		for _, cm := range configMaps.Items {
-			if cm.Name != instance.Spec.ConfigMapName && len(cm.ObjectMeta.OwnerReferences) > 0 {
-				if cm.ObjectMeta.OwnerReferences[0].Name == instance.Name {
+			if cm.Name != instance.Spec.ConfigMapName && len(cm.OwnerReferences) > 0 {
+				if cm.OwnerReferences[0].Name == instance.Name {
 					if err = r.Delete(ctx, &cm); err != nil {
 						log.Error(err, "Could not delete ConfigMap")
 						return ctrl.Result{}, err
