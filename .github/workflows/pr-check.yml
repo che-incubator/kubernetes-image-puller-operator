@@ -48,9 +48,18 @@ jobs:
         id: run-minikube
         uses: che-incubator/setup-minikube-action@fbf2aa1144e0088e9200fc2ecf5e26040ea2a8e4 # next
         with:
-          minikube-version: v1.34.0
-      - name: Run tests
+          minikube-version: v1.38.1
+      - name: Wait for cluster readiness
         run: |
-          make download-operator-sdk
-          bin/operator-sdk olm install --version v0.28.0
-          bin/operator-sdk scorecard bundle --wait-time 120s
+          kubectl wait --for=condition=Ready nodes --all --timeout=120s
+          kubectl wait --for=condition=Ready pods --all -n kube-system --timeout=120s
+      - name: Run tests
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          retry_wait_seconds: 30
+          command: |
+            make download-operator-sdk
+            bin/operator-sdk olm install --version v0.28.0
+            bin/operator-sdk scorecard bundle --wait-time 120s
