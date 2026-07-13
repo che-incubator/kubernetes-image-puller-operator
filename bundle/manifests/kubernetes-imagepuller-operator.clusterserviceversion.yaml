@@ -32,10 +32,10 @@ metadata:
     categories: Developer Tools
     certified: "false"
     containerImage: quay.io/eclipse/kubernetes-image-puller-operator:1.1.0
-    createdAt: "2024-01-15T16:23:04Z"
+    createdAt: "2026-07-13T14:25:13Z"
     description: Create and manage kubernetes-image-puller instances.
-    operators.operatorframework.io/builder: operator-sdk-v1.9.0+git
-    operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
+    operators.operatorframework.io/builder: operator-sdk-v1.38.0
+    operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
     repository: https://github.com/che-incubator/kubernetes-image-puller-operator
     support: Community
   name: kubernetes-imagepuller-operator.v1.1.0
@@ -86,6 +86,8 @@ spec:
             path: images
           - displayName: NodeSelector
             path: nodeSelector
+          - displayName: Tolerations
+            path: tolerations
         statusDescriptors:
           - description: KubernetesImagePuller image in use.
             displayName: Image
@@ -131,7 +133,9 @@ spec:
                 - create
           serviceAccountName: kubernetes-image-puller-operator-sa
       deployments:
-        - name: kubernetes-image-puller-operator-manager
+        - label:
+            name: kubernetes-image-puller-operator
+          name: kubernetes-image-puller-operator-manager
           spec:
             replicas: 1
             selector:
@@ -187,6 +191,15 @@ spec:
                       requests:
                         cpu: 100m
                         memory: 64Mi
+                    securityContext:
+                      allowPrivilegeEscalation: false
+                      capabilities:
+                        drop:
+                          - ALL
+                      readOnlyRootFilesystem: true
+                    volumeMounts:
+                      - mountPath: /tmp
+                        name: tmp
                   - args:
                       - --secure-listen-address=0.0.0.0:8443
                       - --upstream=http://127.0.0.1:8080/
@@ -198,8 +211,15 @@ spec:
                       - containerPort: 8443
                         name: https
                     resources: {}
+                securityContext:
+                  runAsNonRoot: true
+                  seccompProfile:
+                    type: RuntimeDefault
                 serviceAccountName: kubernetes-image-puller-operator-sa
                 terminationGracePeriodSeconds: 10
+                volumes:
+                  - emptyDir: {}
+                    name: tmp
       permissions:
         - rules:
             - apiGroups:

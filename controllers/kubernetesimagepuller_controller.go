@@ -382,7 +382,9 @@ func GetDeploymentConfigMapName(deployment *appsv1.Deployment) (string, error) {
 func (r *KubernetesImagePullerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&chev1alpha1.KubernetesImagePuller{}).
+		Owns(&appsv1.DaemonSet{}).
 		Owns(&appsv1.Deployment{}).
+		Owns(&corev1.Pod{}).
 		Owns(&corev1.ConfigMap{}).
 		Complete(r)
 }
