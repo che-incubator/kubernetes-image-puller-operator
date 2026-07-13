@@ -31,11 +31,25 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           fetch-depth: 0
+      - name: Validate inputs
+        env:
+          RELEASE_VERSION: ${{ github.event.inputs.version }}
+          IMAGE_PULLER_IMAGE: ${{ github.event.inputs.imagePullerImage }}
+        run: |
+          if [[ ! "${RELEASE_VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Invalid version format: ${RELEASE_VERSION}"
+            exit 1
+          fi
+          if [[ ! "${IMAGE_PULLER_IMAGE}" =~ ^quay\.io/eclipse/kubernetes-image-puller:[a-zA-Z0-9._-]+$ ]]; then
+            echo "::error::Image must match quay.io/eclipse/kubernetes-image-puller:<tag>"
+            exit 1
+          fi
       - name: Check existing tags
+        env:
+          RECREATE_TAGS: ${{ github.event.inputs.forceRecreateTags }}
+          VERSION: ${{ github.event.inputs.version }}
         run: |
           set +e
-          RECREATE_TAGS=${{ github.event.inputs.forceRecreateTags }}
-          VERSION=${{ github.event.inputs.version }}
           EXISTING_TAG=$(git ls-remote --exit-code origin refs/tags/${VERSION})
           if [[ -n ${EXISTING_TAG} ]]; then
             if [[ ${RECREATE_TAGS} == "true" ]]; then
@@ -71,20 +85,23 @@ jobs:
         with:
           go-version: '1.26'
       - name: Release operator
+        env:
+          RELEASE_VERSION: ${{ github.event.inputs.version }}
+          FORCE_RECREATE_TAGS: ${{ github.event.inputs.forceRecreateTags }}
+          IMAGE_PULLER_IMAGE: ${{ github.event.inputs.imagePullerImage }}
+          GITHUB_TOKEN: ${{ secrets.CHE_INCUBATOR_BOT_GITHUB_TOKEN }}
         run: |
-          RELEASE_VERSION=${{ github.event.inputs.version }}
           echo "RELEASE_VERSION=${RELEASE_VERSION}"
           BRANCH=${RELEASE_VERSION%.*}.x
           echo "BRANCH=${BRANCH}"
           git config --global user.name "Anatolii Bazko"
           git config --global user.email "abazko@redhat.com"
-          export GITHUB_TOKEN=${{ secrets.CHE_INCUBATOR_BOT_GITHUB_TOKEN }}
 
           set -e
 
-          if [[ ${{ github.event.inputs.forceRecreateTags }} == "true" ]]; then force_update="--force"; fi
-          ./make-release.sh ${RELEASE_VERSION} ${force_update} \
-            --image-puller-image ${{ github.event.inputs.imagePullerImage }} \
+          if [[ "${FORCE_RECREATE_TAGS}" == "true" ]]; then force_update="--force"; fi
+          ./make-release.sh "${RELEASE_VERSION}" ${force_update} \
+            --image-puller-image "${IMAGE_PULLER_IMAGE}" \
             --release \
             --release-olm-files \
             --release-olm-bundle \
