@@ -80,7 +80,7 @@ checkoutToReleaseBranch() {
 
 buildOperatorImage() {
   echo "[INFO] buildOperatorImage :: Build operator image"
-  make docker-build docker-push IMG="${RELEASE_IMAGE}" IMAGE_PULLER_IMAGE="${IMAGE_PULLER_IMAGE}"
+  make docker-build docker-push IMG="${RELEASE_IMAGE}"
 }
 
 updateVersionFile() {
