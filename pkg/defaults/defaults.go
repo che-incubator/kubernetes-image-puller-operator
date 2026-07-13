@@ -15,7 +15,7 @@ package defaults
 const (
 	ConfigMapName    = "k8s-image-puller"
 	DeploymentName   = "kubernetes-image-puller"
-	ImagePullerImage = "quay.io/eclipse/kubernetes-image-puller:next"
+	ImagePullerImage = "quay.io/eclipse/kubernetes-image-puller:1.1.1"
 
 	AppLabelValue      = "kubernetes-image-puller"
 	ContainerName      = "kubernetes-image-puller"
