@@ -101,9 +101,8 @@ updateImagePullerImage() {
   echo "[INFO] updateImagePullerImage to: ${IMAGE_PULLER_IMAGE}"
 
   sed -i 's|quay.io/eclipse/kubernetes-image-puller:next|'"${IMAGE_PULLER_IMAGE}"'|g' pkg/defaults/defaults.go
-  sed -i 's|quay.io/eclipse/kubernetes-image-puller:next|'"${IMAGE_PULLER_IMAGE}"'|g' build/Dockerfile
 
-  git add pkg/defaults/defaults.go build/Dockerfile
+  git add pkg/defaults/defaults.go
   git commit -m "ci: Update ImagePullerImage to ${IMAGE_PULLER_IMAGE}" --signoff
 }
 
