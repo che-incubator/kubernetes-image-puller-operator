@@ -100,6 +100,8 @@ updateVersionFile() {
 updateImagePullerImage() {
   echo "[INFO] updateImagePullerImage to: ${IMAGE_PULLER_IMAGE}"
 
+  sed -i 's|quay.io/eclipse/kubernetes-image-puller:next|'${IMAGE_PULLER_IMAGE}'|g' pkg/defaults/defaults.go
+
   if ! grep -q "${IMAGE_PULLER_IMAGE}" pkg/defaults/defaults.go; then
     echo "[ERROR] Failed to update ImagePullerImage in pkg/defaults/defaults.go"
     exit 1
