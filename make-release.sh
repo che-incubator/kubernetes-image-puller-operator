@@ -26,6 +26,7 @@ init() {
   GIT_REMOTE_UPSTREAM="https://github.com/che-incubator/kubernetes-image-puller-operator.git"
   PREPARE_COMMUNITY_OPERATORS_UPDATES=false
   COMMUNITY_OPERATORS_REPOSITORY_DIR=""
+  IMAGE_PULLER_IMAGE=""
 
   if [[ $# -lt 1 ]]; then usage; exit; fi
 
@@ -39,15 +40,22 @@ init() {
       '--pull-requests') CREATE_PULL_REQUESTS=true; shift 0;;
       '--prepare-community-operators-update') PREPARE_COMMUNITY_OPERATORS_UPDATES=true; shift 0;;
       '--community-operators-repository-dir') COMMUNITY_OPERATORS_REPOSITORY_DIR=$2; shift 1;;
+      '--image-puller-image') IMAGE_PULLER_IMAGE=$2; shift 1;;
     '--help'|'-h') usage; exit;;
     esac
     shift 1
   done
+
+  if [[ -z "${IMAGE_PULLER_IMAGE}" ]]; then
+    echo "[ERROR] --image-puller-image is required"
+    usage
+    exit 1
+  fi
 }
 
 usage () {
-  echo "Usage:   $0 [RELEASE_VERSION] --release --release-olm-files --release-olm-bundle --push-git-changes --pull-requests"
-  echo "Usage:   $0 [RELEASE_VERSION] --prepare-community-operators-update --community-operators-repository-dir <DIR>"
+  echo "Usage:   $0 [RELEASE_VERSION] --image-puller-image <IMAGE> --release --release-olm-files --release-olm-bundle --push-git-changes --pull-requests"
+  echo "Usage:   $0 [RELEASE_VERSION] --image-puller-image <IMAGE> --prepare-community-operators-update --community-operators-repository-dir <DIR>"
 }
 
 resetChanges() {
@@ -72,7 +80,7 @@ checkoutToReleaseBranch() {
 
 buildOperatorImage() {
   echo "[INFO] buildOperatorImage :: Build operator image"
-  make docker-build docker-push IMG="${RELEASE_IMAGE}"
+  make docker-build docker-push IMG="${RELEASE_IMAGE}" IMAGE_PULLER_IMAGE="${IMAGE_PULLER_IMAGE}"
 }
 
 updateVersionFile() {
@@ -87,6 +95,16 @@ updateVersionFile() {
   git add Makefile
 
   git commit -m "ci: Update VERSION to ${RELEASE_VERSION}" --signoff
+}
+
+updateImagePullerImage() {
+  echo "[INFO] updateImagePullerImage to: ${IMAGE_PULLER_IMAGE}"
+
+  sed -i 's|quay.io/eclipse/kubernetes-image-puller:next|'"${IMAGE_PULLER_IMAGE}"'|g' pkg/defaults/defaults.go
+  sed -i 's|quay.io/eclipse/kubernetes-image-puller:next|'"${IMAGE_PULLER_IMAGE}"'|g' build/Dockerfile
+
+  git add pkg/defaults/defaults.go build/Dockerfile
+  git commit -m "ci: Update ImagePullerImage to ${IMAGE_PULLER_IMAGE}" --signoff
 }
 
 releaseOlmFiles() {
@@ -208,6 +226,7 @@ prepareCommunityOperatorsUpdates() {
 run() {
   runUnitTests
   checkoutToReleaseBranch
+  updateImagePullerImage
   buildOperatorImage
   if [[ $RELEASE_OLM_FILES == "true" ]]; then
     releaseOlmFiles

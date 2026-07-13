@@ -14,6 +14,7 @@
 FROM registry.access.redhat.com/ubi9/go-toolset:1.26 as builder
 ENV GOPATH=/go/
 ARG SKIP_TESTS="false"
+ARG IMAGE_PULLER_IMAGE
 USER root
 
 WORKDIR /workspace
@@ -32,6 +33,7 @@ COPY controllers/ controllers/
 COPY pkg/ pkg/
 COPY hack/ hack/
 COPY config/webhook/ config/webhook/
+ARG IMAGE_PULLER_IMAGE=quay.io/eclipse/kubernetes-image-puller:next
 
 # Test
 RUN if [[ ${SKIP_TESTS} == "false" ]]; then make test; fi

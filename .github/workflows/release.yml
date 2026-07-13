@@ -17,6 +17,9 @@ on:
       version:
         description: 'The version that is going to be released. Should be in format 1.yy.z'
         required: true
+      imagePullerImage:
+        description: 'The kubernetes-image-puller image to use (e.g. quay.io/eclipse/kubernetes-image-puller:1.0.0)'
+        required: true
       forceRecreateTags:
         description: If true, tags will be recreated. Use with caution
         required: false
@@ -81,6 +84,7 @@ jobs:
 
           if [[ ${{ github.event.inputs.forceRecreateTags }} == "true" ]]; then force_update="--force"; fi
           ./make-release.sh ${RELEASE_VERSION} ${force_update} \
+            --image-puller-image ${{ github.event.inputs.imagePullerImage }} \
             --release \
             --release-olm-files \
             --release-olm-bundle \

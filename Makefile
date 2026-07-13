@@ -101,7 +101,7 @@ run: manifests generate fmt vet ## Run a controller from your host.
 ##@ Development
 
 docker-build: ## Build docker image with the manager.
-	$(IMAGE_TOOL) build --no-cache -t ${IMG} -f build/Dockerfile .
+	$(IMAGE_TOOL) build --no-cache -t ${IMG} -f build/Dockerfile $(if $(IMAGE_PULLER_IMAGE),--build-arg IMAGE_PULLER_IMAGE=$(IMAGE_PULLER_IMAGE)) .
 
 docker-push: ## Push docker image with the manager.
 	$(IMAGE_TOOL) push ${IMG}

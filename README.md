@@ -210,8 +210,8 @@ Then, to see these changes on OperatorHub:
 and [`community-operators-prod`](https://github.com/redhat-openshift-ecosystem/community-operators-prod/) repositories.
 2. Copy a new bundle into the `community-operators` and `community-operators-prod` repositories:
 ```bash
-./make-release.sh <RELEASE_VERSION> --prepare-community-operators-update --community-operators-repository-dir <PROJECT_DIR>/community-operators-prod
-./make-release.sh <RELEASE_VERSION> --prepare-community-operators-update --community-operators-repository-dir <PROJECT_DIR>/community-operators
+./make-release.sh <RELEASE_VERSION> --image-puller-image <IMAGE> --prepare-community-operators-update --community-operators-repository-dir <PROJECT_DIR>/community-operators-prod
+./make-release.sh <RELEASE_VERSION> --image-puller-image <IMAGE> --prepare-community-operators-update --community-operators-repository-dir <PROJECT_DIR>/community-operators
 ```
 3. Copy `deploy/olm-catalog/kubernetes-imagepuller-operator/` to the `kubernetes-imagepuller-operator` folder of those repositories.
 4. Open two separate pull requests to [`community-operators`](https://github.com/k8s-operatorhub/community-operators/)
