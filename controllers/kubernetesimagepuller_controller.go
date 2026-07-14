@@ -30,6 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -39,8 +40,9 @@ type KubernetesImagePullerReconciler struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
 	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
+	Log         logr.Logger
+	Scheme      *runtime.Scheme
+	IsOpenShift bool
 }
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
@@ -54,7 +56,6 @@ type KubernetesImagePullerReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.8.3/pkg/reconcile
 func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("kubernetesimagepuller", req.NamespacedName)
-
 	// Fetch the KubernetesImagePuller instance
 	instance := &chev1alpha1.KubernetesImagePuller{}
 	err := r.Get(ctx, req.NamespacedName, instance)
@@ -171,7 +172,7 @@ func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctr
 				}
 				// ConfigMap names are different, just run an update
 			} else {
-				err = r.Update(ctx, NewImagePullerDeployment(instance))
+				err = r.Update(ctx, NewImagePullerDeployment(instance, r.IsOpenShift))
 				if err != nil {
 					log.Error(err, "Error updating deployment")
 					return ctrl.Result{}, err
@@ -229,7 +230,7 @@ func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctr
 	err = r.Get(ctx, types.NamespacedName{Name: instance.Spec.DeploymentName, Namespace: instance.Namespace}, foundDeployment)
 	if err != nil && errors.IsNotFound(err) {
 		log.Info("Creating kubernetes image puller deployment", "Deployment.Namespace", instance.Namespace)
-		err = r.Create(ctx, NewImagePullerDeployment(instance))
+		err = r.Create(ctx, NewImagePullerDeployment(instance, r.IsOpenShift))
 		if err != nil {
 			log.Error(err, "Could not create deployment")
 			return ctrl.Result{}, err
@@ -275,7 +276,7 @@ func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctr
 			return ctrl.Result{}, err
 		}
 
-		err = r.Update(ctx, NewImagePullerDeployment(instance))
+		err = r.Update(ctx, NewImagePullerDeployment(instance, r.IsOpenShift))
 		if err != nil {
 			log.Error(err, "Error updating deployment")
 			return ctrl.Result{}, err
@@ -288,11 +289,9 @@ func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctr
 	return ctrl.Result{}, nil
 }
 
-func NewImagePullerDeployment(cr *chev1alpha1.KubernetesImagePuller) *appsv1.Deployment {
+func NewImagePullerDeployment(cr *chev1alpha1.KubernetesImagePuller, isOpenShift bool) *appsv1.Deployment {
 	replicas := int32(1)
-	runAsNonRoot := true
-	allowPrivilegeEscalation := false
-	readOnlyRootFilesystem := true
+
 	var deploymentName string
 	if cr.Spec.DeploymentName == "" {
 		deploymentName = defaults.DeploymentName
@@ -320,23 +319,12 @@ func NewImagePullerDeployment(cr *chev1alpha1.KubernetesImagePuller) *appsv1.Dep
 				},
 				Spec: corev1.PodSpec{
 					ServiceAccountName: defaults.ServiceAccountName,
-					SecurityContext: &corev1.PodSecurityContext{
-						RunAsNonRoot: &runAsNonRoot,
-						SeccompProfile: &corev1.SeccompProfile{
-							Type: corev1.SeccompProfileTypeRuntimeDefault,
-						},
-					},
+					SecurityContext:    getPodSecurityContext(isOpenShift),
 					Containers: []corev1.Container{
 						{
-							Name:  defaults.ContainerName,
-							Image: cr.Spec.ImagePullerImage,
-							SecurityContext: &corev1.SecurityContext{
-								AllowPrivilegeEscalation: &allowPrivilegeEscalation,
-								ReadOnlyRootFilesystem:   &readOnlyRootFilesystem,
-								Capabilities: &corev1.Capabilities{
-									Drop: []corev1.Capability{"ALL"},
-								},
-							},
+							Name:            defaults.ContainerName,
+							Image:           cr.Spec.ImagePullerImage,
+							SecurityContext: getContainerSecurityContext(isOpenShift),
 							Resources: corev1.ResourceRequirements{
 								Requests: corev1.ResourceList{
 									corev1.ResourceCPU:    resource.MustParse("50m"),
@@ -376,6 +364,36 @@ func GetDeploymentConfigMapName(deployment *appsv1.Deployment) (string, error) {
 		return "", fmt.Errorf("deployment %s/%s has no configmap env source", deployment.Namespace, deployment.Name)
 	}
 	return envFrom[0].ConfigMapRef.Name, nil
+}
+
+func getPodSecurityContext(isOpenShift bool) *corev1.PodSecurityContext {
+	securityContext := &corev1.PodSecurityContext{
+		RunAsNonRoot:   ptr.To(true),
+		SeccompProfile: ptr.To(defaults.SeccompProfile),
+	}
+
+	if !isOpenShift {
+		securityContext.FSGroup = ptr.To(defaults.NonRootGID)
+	}
+
+	return securityContext
+}
+
+func getContainerSecurityContext(isOpenShift bool) *corev1.SecurityContext {
+	ctx := &corev1.SecurityContext{
+		Capabilities: &corev1.Capabilities{
+			Drop: []corev1.Capability{"ALL"},
+		},
+		ReadOnlyRootFilesystem:   ptr.To(true),
+		AllowPrivilegeEscalation: ptr.To(false),
+	}
+
+	if !isOpenShift {
+		ctx.RunAsUser = ptr.To(defaults.NonRootUID)
+		ctx.RunAsGroup = ptr.To(defaults.NonRootGID)
+	}
+
+	return ctx
 }
 
 // SetupWithManager sets up the controller with the Manager.

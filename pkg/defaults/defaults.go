@@ -12,6 +12,8 @@
 
 package defaults
 
+import corev1 "k8s.io/api/core/v1"
+
 const (
 	ConfigMapName    = "k8s-image-puller"
 	DeploymentName   = "kubernetes-image-puller"
@@ -22,4 +24,11 @@ const (
 	DaemonSetName      = "kubernetes-image-puller"
 	RBACName           = "create-daemonset"
 	ServiceAccountName = "k8s-image-puller"
+
+	NonRootUID = int64(65532)
+	NonRootGID = int64(65532)
+)
+
+var (
+	SeccompProfile = corev1.SeccompProfile{Type: corev1.SeccompProfileTypeRuntimeDefault}
 )

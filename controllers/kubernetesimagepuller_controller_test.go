@@ -155,7 +155,7 @@ func defaultImagePullerWithConfigMapNameDeploymentNameAndImagePullerImage() *che
 }
 
 func expectedDeployment(cr *chev1alpha1.KubernetesImagePuller) *appsv1.Deployment {
-	deployment := NewImagePullerDeployment(cr)
+	deployment := NewImagePullerDeployment(cr, false)
 	deployment.ResourceVersion = "1"
 	return deployment
 }
@@ -784,7 +784,7 @@ func TestUpdatesConfigMap(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			client := setupClient(t, tc.cr, tc.old, NewImagePullerDeployment(tc.cr), createDaemonsetRole, createDaemonsetRoleBinding, defaultServiceAccount)
+			client := setupClient(t, tc.cr, tc.old, NewImagePullerDeployment(tc.cr, true), createDaemonsetRole, createDaemonsetRoleBinding, defaultServiceAccount)
 			r := &KubernetesImagePullerReconciler{
 				Client: client,
 				Scheme: scheme.Scheme,
@@ -834,7 +834,7 @@ func TestDeletesOldDeploymentOnNameChange(t *testing.T) {
 		},
 	}} {
 		t.Run(tc.name, func(t *testing.T) {
-			c := setupClient(t, tc.newCr, NewImagePullerDeployment(tc.newCr), createDaemonsetRole, createDaemonsetRoleBinding, defaultServiceAccount, expectedConfigMap(tc.newCr))
+			c := setupClient(t, tc.newCr, NewImagePullerDeployment(tc.newCr, true), createDaemonsetRole, createDaemonsetRoleBinding, defaultServiceAccount, expectedConfigMap(tc.newCr))
 			r := &KubernetesImagePullerReconciler{
 				Client: c,
 				Scheme: scheme.Scheme,
