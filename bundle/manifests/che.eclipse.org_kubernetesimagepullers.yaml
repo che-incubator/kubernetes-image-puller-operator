@@ -78,6 +78,8 @@ spec:
                 type: string
               nodeSelector:
                 type: string
+              tolerations:
+                type: string
             type: object
           status:
             description: KubernetesImagePullerStatus defines the observed state of
