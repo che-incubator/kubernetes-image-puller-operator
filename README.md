@@ -26,7 +26,7 @@ spec:
   configMapName: k8s-image-puller # the name of the configmap the operator creates
   daemonsetName: k8s-image-puller # the name of subsequent daemonsets created by the kubernetes-image-puller
   images: >- # the list of images to pre-pull
-  	che-theia=quay.io/eclipse/che-theia:next;java11-maven=quay.io/eclipse/che-java11-maven:next
+    che-code=quay.io/che-incubator/che-code:next;base-developer-image=quay.io/devfile/base-developer-image:ubi9-latest
   cachingIntervalHours: '2' # number of hours between health checks
   cachingMemoryRequest: '10Mi' # the memory request for each pre-pulled image
   cachingMemoryLimit: '20Mi' # the memory limit for each pre-pulled image

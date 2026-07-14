@@ -16,4 +16,4 @@ metadata:
   name: image-puller
 spec:
   daemonsetName: "k8s-image-puller"
-  images: "java11-maven=quay.io/eclipse/che-java11-maven:next;che-theia=quay.io/eclipse/che-theia:next"
+  images: "che-code=quay.io/che-incubator/che-code:next;base-developer-image=quay.io/devfile/base-developer-image:ubi9-latest"
