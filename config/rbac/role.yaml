@@ -21,9 +21,11 @@ rules:
   resources:
   - pods
   verbs:
+  - create
   - delete
   - get
   - list
+  - update
   - watch
 - apiGroups:
   - ""
@@ -42,7 +44,11 @@ rules:
   - serviceaccounts
   verbs:
   - create
+  - delete
   - get
+  - list
+  - update
+  - watch
 - apiGroups:
   - rbac.authorization.k8s.io
   resources:
@@ -53,6 +59,7 @@ rules:
   - delete
   - get
   - list
+  - update
   - watch
 - apiGroups:
   - apps
