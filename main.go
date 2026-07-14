@@ -21,6 +21,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
+	"k8s.io/client-go/discovery"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -122,7 +123,9 @@ func main() {
 		}
 	}
 
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+	cfg := ctrl.GetConfigOrDie()
+
+	mgr, err := ctrl.NewManager(cfg, ctrl.Options{
 		Scheme: scheme,
 		Metrics: metricsserver.Options{
 			BindAddress: metricsAddr,
@@ -140,10 +143,27 @@ func main() {
 		os.Exit(1)
 	}
 
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(cfg)
+	if err != nil {
+		setupLog.Error(err, "unable to create discovery client")
+		os.Exit(1)
+	}
+
+	isOpenShift, err := isOpenShift(discoveryClient)
+	if err != nil {
+		setupLog.Error(err, "unable to detect OpenShift")
+		os.Exit(1)
+	}
+
+	if isOpenShift {
+		setupLog.Info("Platform is OpenShift")
+	}
+
 	imagePullerController := &controllers.KubernetesImagePullerReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("KubernetesImagePuller"),
-		Scheme: mgr.GetScheme(),
+		Client:      mgr.GetClient(),
+		Log:         ctrl.Log.WithName("controllers").WithName("KubernetesImagePuller"),
+		Scheme:      mgr.GetScheme(),
+		IsOpenShift: isOpenShift,
 	}
 
 	if err = imagePullerController.SetupWithManager(mgr); err != nil {
@@ -172,4 +192,19 @@ func main() {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
+}
+
+func isOpenShift(discoveryClient discovery.DiscoveryInterface) (bool, error) {
+	apiGroups, err := discoveryClient.ServerGroups()
+	if err != nil {
+		return false, err
+	}
+
+	for _, group := range apiGroups.Groups {
+		if group.Name == "route.openshift.io" {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
