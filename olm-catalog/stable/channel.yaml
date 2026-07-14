@@ -9,7 +9,6 @@
 # Contributors:
 #   Red Hat, Inc. - initial API and implementation
 #
-
 schema: olm.channel
 name: stable
 package: kubernetes-imagepuller-operator
@@ -29,3 +28,5 @@ entries:
     replaces: kubernetes-imagepuller-operator.v1.0.5
   - name: kubernetes-imagepuller-operator.v1.1.0
     replaces: kubernetes-imagepuller-operator.v1.0.6
+  - name: kubernetes-imagepuller-operator.v1.1.1
+    replaces: kubernetes-imagepuller-operator.v1.1.0
