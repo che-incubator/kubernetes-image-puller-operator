@@ -197,7 +197,7 @@ createPRToMainBranch() {
   resetChanges main
   local tmpBranch="copy-${RELEASE_VERSION}-bundle-to-main"
   git checkout -B "${tmpBranch}"
-  git diff refs/heads/main...refs/heads/${RELEASE_BRANCH} | git apply -3
+  git diff refs/heads/main...refs/heads/${RELEASE_BRANCH} ':(exclude)pkg/defaults/defaults.go' | git apply -3
   if git status --porcelain; then
     git add -A || true
     git commit -am "ci: Copy ${RELEASE_VERSION} bundle to main" --signoff
