@@ -59,6 +59,8 @@ spec:
         path: images
       - displayName: NodeSelector
         path: nodeSelector
+      - displayName: Tolerations
+        path: tolerations
       statusDescriptors:
       - description: KubernetesImagePuller image in use.
         displayName: Image
