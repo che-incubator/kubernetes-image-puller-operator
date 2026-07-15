@@ -46,10 +46,12 @@ init() {
     shift 1
   done
 
-  if [[ -z "${IMAGE_PULLER_IMAGE}" ]]; then
-    echo "[ERROR] --image-puller-image is required"
-    usage
-    exit 1
+  if [[ $RUN_RELEASE == "true" ]]; then
+    if [[ -z "${IMAGE_PULLER_IMAGE}" ]]; then
+      echo "[ERROR] --image-puller-image is required"
+      usage
+      exit 1
+    fi
   fi
 }
 
