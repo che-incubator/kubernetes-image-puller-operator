@@ -106,4 +106,5 @@ The Docker build runs `make test` inside the image build by default. The PR chec
 - One concern per PR, link related issues
 - Squash commits into clean, atomic units before requesting review
 - Run `make test` before submitting
+- Run `golangci-lint run ./...` before submitting — CI runs golangci-lint and will fail on lint issues not caught by `make test`
 - Run `make gen-deployment` if kustomize configs were changed

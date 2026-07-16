@@ -30,7 +30,7 @@ func NewRole(cr *chev1alpha1.KubernetesImagePuller) *rbacv1.Role {
 			Name:      defaults.RBACName,
 			Namespace: cr.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(cr, chev1alpha1.SchemeBuilder.GroupVersion.WithKind("KubernetesImagePuller")),
+				*metav1.NewControllerRef(cr, chev1alpha1.GroupVersion.WithKind("KubernetesImagePuller")),
 			},
 		},
 		Rules: []rbacv1.PolicyRule{{
@@ -51,7 +51,7 @@ func NewRoleBinding(cr *chev1alpha1.KubernetesImagePuller) *rbacv1.RoleBinding {
 			Name:      defaults.RBACName,
 			Namespace: cr.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(cr, chev1alpha1.SchemeBuilder.GroupVersion.WithKind("KubernetesImagePuller")),
+				*metav1.NewControllerRef(cr, chev1alpha1.GroupVersion.WithKind("KubernetesImagePuller")),
 			},
 		},
 		Subjects: []rbacv1.Subject{{
@@ -76,7 +76,7 @@ func NewServiceAccount(cr *chev1alpha1.KubernetesImagePuller) *corev1.ServiceAcc
 			Name:      defaults.ServiceAccountName,
 			Namespace: cr.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(cr, chev1alpha1.SchemeBuilder.GroupVersion.WithKind("KubernetesImagePuller")),
+				*metav1.NewControllerRef(cr, chev1alpha1.GroupVersion.WithKind("KubernetesImagePuller")),
 			},
 		},
 	}

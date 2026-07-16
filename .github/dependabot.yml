@@ -4,6 +4,11 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    groups:
+      k8s-dependencies:
+        patterns:
+          - "k8s.io/*"
+          - "sigs.k8s.io/*"
   - package-ecosystem: github-actions
     directory: /
     schedule:
