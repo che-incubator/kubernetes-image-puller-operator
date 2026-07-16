@@ -112,9 +112,8 @@ func defaultImagePullerWithAllDefaults() *chev1alpha1.KubernetesImagePuller {
 			ResourceVersion: "1",
 		},
 		Spec: chev1alpha1.KubernetesImagePullerSpec{
-			ConfigMapName:    defaultConfigMapName,
-			DeploymentName:   defaultDeploymentName,
-			ImagePullerImage: defaultImagePullerImage,
+			ConfigMapName:  defaultConfigMapName,
+			DeploymentName: defaultDeploymentName,
 		},
 	}
 }
@@ -131,9 +130,8 @@ func defaultImagePullerWithConfigMapNameDeploymentNameAndImagePullerImage() *che
 			ResourceVersion: "2",
 		},
 		Spec: chev1alpha1.KubernetesImagePullerSpec{
-			ConfigMapName:    defaultConfigMapName,
-			DeploymentName:   defaultDeploymentName,
-			ImagePullerImage: defaultImagePullerImage,
+			ConfigMapName:  defaultConfigMapName,
+			DeploymentName: defaultDeploymentName,
 		},
 	}
 }
@@ -389,9 +387,8 @@ func TestUpdatesImagePullerImageStatus(t *testing.T) {
 				ResourceVersion: "0",
 			},
 			Spec: chev1alpha1.KubernetesImagePullerSpec{
-				ConfigMapName:    defaultConfigMapName,
-				DeploymentName:   defaultDeploymentName,
-				ImagePullerImage: defaultImagePullerImage,
+				ConfigMapName:  defaultConfigMapName,
+				DeploymentName: defaultDeploymentName,
 			},
 		},
 		want: &chev1alpha1.KubernetesImagePuller{
@@ -401,9 +398,8 @@ func TestUpdatesImagePullerImageStatus(t *testing.T) {
 				ResourceVersion: "1",
 			},
 			Spec: chev1alpha1.KubernetesImagePullerSpec{
-				ConfigMapName:    defaultConfigMapName,
-				DeploymentName:   defaultDeploymentName,
-				ImagePullerImage: defaultImagePullerImage,
+				ConfigMapName:  defaultConfigMapName,
+				DeploymentName: defaultDeploymentName,
 			},
 			Status: chev1alpha1.KubernetesImagePullerStatus{
 				ImagePullerImage: defaultImagePullerImage,
@@ -499,10 +495,9 @@ func TestCreatesConfigMap(t *testing.T) {
 					Namespace: namespace,
 				},
 				Spec: chev1alpha1.KubernetesImagePullerSpec{
-					DaemonsetName:    "other-daemonset-name",
-					ConfigMapName:    defaultConfigMapName,
-					DeploymentName:   defaultDeploymentName,
-					ImagePullerImage: defaultImagePullerImage,
+					DaemonsetName:  "other-daemonset-name",
+					ConfigMapName:  defaultConfigMapName,
+					DeploymentName: defaultDeploymentName,
 				},
 			},
 			want: &corev1.ConfigMap{
@@ -543,11 +538,10 @@ func TestCreatesConfigMap(t *testing.T) {
 					Namespace: namespace,
 				},
 				Spec: chev1alpha1.KubernetesImagePullerSpec{
-					ConfigMapName:    defaultConfigMapName,
-					DeploymentName:   defaultDeploymentName,
-					DaemonsetName:    "other-daemonset-name",
-					ImagePullerImage: defaultImagePullerImage,
-					Images:           "che-devfile-registry=quay.io/eclipse/che-devfile-registry:latest,woopra-backend=quay.io/openshiftio/che-workspace-telemetry-woopra-backend:latest",
+					ConfigMapName:  defaultConfigMapName,
+					DeploymentName: defaultDeploymentName,
+					DaemonsetName:  "other-daemonset-name",
+					Images:         "che-devfile-registry=quay.io/eclipse/che-devfile-registry:latest,woopra-backend=quay.io/openshiftio/che-workspace-telemetry-woopra-backend:latest",
 				},
 			},
 			want: &corev1.ConfigMap{
@@ -588,9 +582,8 @@ func TestCreatesConfigMap(t *testing.T) {
 					Namespace: namespace,
 				},
 				Spec: chev1alpha1.KubernetesImagePullerSpec{
-					ConfigMapName:    "my-configmap",
-					DeploymentName:   defaultDeploymentName,
-					ImagePullerImage: defaultImagePullerImage,
+					ConfigMapName:  "my-configmap",
+					DeploymentName: defaultDeploymentName,
 				},
 			},
 			want: &corev1.ConfigMap{
@@ -666,10 +659,9 @@ func TestUpdatesConfigMap(t *testing.T) {
 					Name:      "test-puller",
 				},
 				Spec: chev1alpha1.KubernetesImagePullerSpec{
-					DaemonsetName:    "new-daemonset",
-					ConfigMapName:    defaultConfigMapName,
-					DeploymentName:   defaultDeploymentName,
-					ImagePullerImage: defaultImagePullerImage,
+					DaemonsetName:  "new-daemonset",
+					ConfigMapName:  defaultConfigMapName,
+					DeploymentName: defaultDeploymentName,
 				},
 			},
 			old: expectedConfigMap(defaultImagePullerWithConfigMapNameDeploymentNameAndImagePullerImage()),
@@ -709,9 +701,8 @@ func TestUpdatesConfigMap(t *testing.T) {
 					// ResourceVersion: "0",
 				},
 				Spec: chev1alpha1.KubernetesImagePullerSpec{
-					ConfigMapName:    "new-configmap",
-					DeploymentName:   defaultDeploymentName,
-					ImagePullerImage: defaultImagePullerImage,
+					ConfigMapName:  "new-configmap",
+					DeploymentName: defaultDeploymentName,
 				},
 			},
 			want: &corev1.ConfigMap{

@@ -106,8 +106,7 @@ func mergeConfigMapWithCR(instance *chev1alpha1.KubernetesImagePuller, defaultCo
 	if instance.Spec.DaemonsetName != "" {
 		defaultConfigMap.Data["DAEMONSET_NAME"] = instance.Spec.DaemonsetName
 	}
-	if instance.Spec.ImagePullerImage != "" {
-		defaultConfigMap.Data["KIP_IMAGE"] = instance.Spec.ImagePullerImage
-	}
+
+	defaultConfigMap.Data["KIP_IMAGE"] = instance.GetImagePullerImage()
 	return defaultConfigMap
 }

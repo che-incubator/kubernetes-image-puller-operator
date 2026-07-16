@@ -80,10 +80,15 @@ func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctr
 		instance.Spec.DeploymentName = defaults.DeploymentName
 		needsUpdate = true
 	}
-	if instance.Spec.ImagePullerImage == "" {
-		instance.Spec.ImagePullerImage = defaults.ImagePullerImage
+
+	// Remove the default image from the spec.
+	// It allows you to use the image tied to the release.
+	if instance.Spec.ImagePullerImage == "quay.io/eclipse/kubernetes-image-puller:1.1.1" ||
+		instance.Spec.ImagePullerImage == "quay.io/eclipse/kubernetes-image-puller:next" {
+		instance.Spec.ImagePullerImage = ""
 		needsUpdate = true
 	}
+
 	if needsUpdate {
 		if err = r.Update(ctx, instance); err != nil {
 			log.Error(err, "Error updating KubernetesImagePuller")
@@ -268,8 +273,8 @@ func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctr
 	}
 
 	// If ImagePullerImage from deployment is different than the spec, update deployment
-	if instance.Spec.ImagePullerImage != instance.Status.ImagePullerImage {
-		instance.Status.ImagePullerImage = instance.Spec.ImagePullerImage
+	if instance.Status.ImagePullerImage != instance.GetImagePullerImage() {
+		instance.Status.ImagePullerImage = instance.GetImagePullerImage()
 		err = r.Status().Update(ctx, instance)
 		if err != nil {
 			log.Error(err, "Error updating custom resource status")
@@ -323,7 +328,7 @@ func NewImagePullerDeployment(cr *chev1alpha1.KubernetesImagePuller, isOpenShift
 					Containers: []corev1.Container{
 						{
 							Name:            defaults.ContainerName,
-							Image:           cr.Spec.ImagePullerImage,
+							Image:           cr.GetImagePullerImage(),
 							SecurityContext: getContainerSecurityContext(isOpenShift),
 							Resources: corev1.ResourceRequirements{
 								Requests: corev1.ResourceList{
