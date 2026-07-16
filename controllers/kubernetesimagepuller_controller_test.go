@@ -40,17 +40,13 @@ var (
 	isController            = true
 	isBlockOwnerDeletion    = true
 	defaultCROwnerReference = metav1.OwnerReference{
-		APIVersion:         chev1alpha1.SchemeBuilder.GroupVersion.String(),
+		APIVersion:         chev1alpha1.GroupVersion.String(),
 		Kind:               "KubernetesImagePuller",
 		Name:               "test-puller",
 		Controller:         &isController,
 		BlockOwnerDeletion: &isBlockOwnerDeletion,
 	}
 	createDaemonsetRole = &rbacv1.Role{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Role",
-			APIVersion: rbacv1.SchemeGroupVersion.String(),
-		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            defaults.RBACName,
 			Namespace:       namespace,
@@ -64,10 +60,6 @@ var (
 		}},
 	}
 	createDaemonsetRoleBinding = &rbacv1.RoleBinding{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "RoleBinding",
-			APIVersion: rbacv1.SchemeGroupVersion.String(),
-		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            defaults.RBACName,
 			Namespace:       namespace,
@@ -85,10 +77,6 @@ var (
 		},
 	}
 	defaultServiceAccount = &corev1.ServiceAccount{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "ServiceAccount",
-			APIVersion: corev1.SchemeGroupVersion.String(),
-		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            defaults.ServiceAccountName,
 			Namespace:       namespace,
@@ -105,7 +93,7 @@ func defaultImagePuller() *chev1alpha1.KubernetesImagePuller {
 	return &chev1alpha1.KubernetesImagePuller{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "KubernetesImagePuller",
-			APIVersion: chev1alpha1.SchemeBuilder.GroupVersion.String(),
+			APIVersion: chev1alpha1.GroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            "test-puller",
@@ -118,10 +106,6 @@ func defaultImagePuller() *chev1alpha1.KubernetesImagePuller {
 
 func defaultImagePullerWithAllDefaults() *chev1alpha1.KubernetesImagePuller {
 	return &chev1alpha1.KubernetesImagePuller{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "KubernetesImagePuller",
-			APIVersion: chev1alpha1.SchemeBuilder.GroupVersion.String(),
-		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            "test-puller",
 			Namespace:       namespace,
@@ -139,7 +123,7 @@ func defaultImagePullerWithConfigMapNameDeploymentNameAndImagePullerImage() *che
 	return &chev1alpha1.KubernetesImagePuller{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "KubernetesImagePuller",
-			APIVersion: chev1alpha1.SchemeBuilder.GroupVersion.String(),
+			APIVersion: chev1alpha1.GroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            "test-puller",
@@ -162,6 +146,7 @@ func expectedDeployment(cr *chev1alpha1.KubernetesImagePuller) *appsv1.Deploymen
 
 func expectedConfigMap(cr *chev1alpha1.KubernetesImagePuller) *corev1.ConfigMap {
 	configMap := config.NewImagePullerConfigMap(cr)
+	configMap.TypeMeta = metav1.TypeMeta{}
 	configMap.OwnerReferences = []metav1.OwnerReference{defaultCROwnerReference}
 	configMap.ResourceVersion = "1"
 	return configMap
@@ -346,7 +331,7 @@ func TestCreatesDeploymentWithDifferentImage(t *testing.T) {
 	cr := &chev1alpha1.KubernetesImagePuller{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "KubernetesImagePuller",
-			APIVersion: chev1alpha1.SchemeBuilder.GroupVersion.String(),
+			APIVersion: chev1alpha1.GroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-puller",
@@ -396,7 +381,7 @@ func TestUpdatesImagePullerImageStatus(t *testing.T) {
 		cr: &chev1alpha1.KubernetesImagePuller{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "KubernetesImagePuller",
-				APIVersion: chev1alpha1.SchemeBuilder.GroupVersion.String(),
+				APIVersion: chev1alpha1.GroupVersion.String(),
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            "test-puller",
@@ -410,10 +395,6 @@ func TestUpdatesImagePullerImageStatus(t *testing.T) {
 			},
 		},
 		want: &chev1alpha1.KubernetesImagePuller{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "KubernetesImagePuller",
-				APIVersion: chev1alpha1.SchemeBuilder.GroupVersion.String(),
-			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            "test-puller",
 				Namespace:       namespace,
@@ -433,7 +414,7 @@ func TestUpdatesImagePullerImageStatus(t *testing.T) {
 		cr: &chev1alpha1.KubernetesImagePuller{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "KubernetesImagePuller",
-				APIVersion: chev1alpha1.SchemeBuilder.GroupVersion.String(),
+				APIVersion: chev1alpha1.GroupVersion.String(),
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            "test-puller",
@@ -450,10 +431,6 @@ func TestUpdatesImagePullerImageStatus(t *testing.T) {
 			},
 		},
 		want: &chev1alpha1.KubernetesImagePuller{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "KubernetesImagePuller",
-				APIVersion: chev1alpha1.SchemeBuilder.GroupVersion.String(),
-			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            "test-puller",
 				Namespace:       namespace,
@@ -515,7 +492,7 @@ func TestCreatesConfigMap(t *testing.T) {
 			cr: &chev1alpha1.KubernetesImagePuller{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "KubernetesImagePuller",
-					APIVersion: chev1alpha1.SchemeBuilder.GroupVersion.String(),
+					APIVersion: chev1alpha1.GroupVersion.String(),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-puller",
@@ -551,10 +528,6 @@ func TestCreatesConfigMap(t *testing.T) {
 					Labels:          map[string]string{"app": defaults.AppLabelValue},
 					OwnerReferences: []metav1.OwnerReference{defaultCROwnerReference},
 				},
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "ConfigMap",
-					APIVersion: corev1.SchemeGroupVersion.String(),
-				},
 			},
 			got: &corev1.ConfigMap{},
 		},
@@ -563,7 +536,7 @@ func TestCreatesConfigMap(t *testing.T) {
 			cr: &chev1alpha1.KubernetesImagePuller{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "KubernetesImagePuller",
-					APIVersion: chev1alpha1.SchemeBuilder.GroupVersion.String(),
+					APIVersion: chev1alpha1.GroupVersion.String(),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-puller",
@@ -600,10 +573,6 @@ func TestCreatesConfigMap(t *testing.T) {
 					Labels:          map[string]string{"app": defaults.AppLabelValue},
 					OwnerReferences: []metav1.OwnerReference{defaultCROwnerReference},
 				},
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "ConfigMap",
-					APIVersion: corev1.SchemeGroupVersion.String(),
-				},
 			},
 			got: &corev1.ConfigMap{},
 		},
@@ -612,7 +581,7 @@ func TestCreatesConfigMap(t *testing.T) {
 			cr: &chev1alpha1.KubernetesImagePuller{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "KubernetesImagePuller",
-					APIVersion: chev1alpha1.SchemeBuilder.GroupVersion.String(),
+					APIVersion: chev1alpha1.GroupVersion.String(),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-puller",
@@ -646,10 +615,6 @@ func TestCreatesConfigMap(t *testing.T) {
 					ResourceVersion: "1",
 					Labels:          map[string]string{"app": defaults.AppLabelValue},
 					OwnerReferences: []metav1.OwnerReference{defaultCROwnerReference},
-				},
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "ConfigMap",
-					APIVersion: corev1.SchemeGroupVersion.String(),
 				},
 			},
 			got: &corev1.ConfigMap{},
@@ -709,10 +674,6 @@ func TestUpdatesConfigMap(t *testing.T) {
 			},
 			old: expectedConfigMap(defaultImagePullerWithConfigMapNameDeploymentNameAndImagePullerImage()),
 			want: &corev1.ConfigMap{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "ConfigMap",
-					APIVersion: corev1.SchemeGroupVersion.String(),
-				},
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace:       namespace,
 					Name:            defaultConfigMapName,
@@ -754,10 +715,6 @@ func TestUpdatesConfigMap(t *testing.T) {
 				},
 			},
 			want: &corev1.ConfigMap{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "ConfigMap",
-					APIVersion: corev1.SchemeGroupVersion.String(),
-				},
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace:       namespace,
 					Name:            "new-configmap",

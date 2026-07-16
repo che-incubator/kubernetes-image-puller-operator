@@ -124,12 +124,12 @@ vet: ## Run go vet against code.
 	go vet ./...
 
 ENVTEST = $(shell pwd)/bin/setup-envtest
-ENVTEST_K8S_VERSION = 1.31.0
+ENVTEST_K8S_VERSION = 1.36.0
 test: manifests generate fmt vet download-envtest ## Run tests.
 	KUBEBUILDER_ASSETS="$$($(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(shell pwd)/testbin -p path)" go test ./... -coverprofile cover.out
 
 download-envtest: ## Download setup-envtest tool
-	test -s $(ENVTEST) || GOBIN=$(shell pwd)/bin go install sigs.k8s.io/controller-runtime/tools/setup-envtest@release-0.19
+	test -s $(ENVTEST) || GOBIN=$(shell pwd)/bin go install sigs.k8s.io/controller-runtime/tools/setup-envtest@release-0.24
 
 # Set a new operator image for kustomize
 kustomize-operator-image: download-kustomize
@@ -298,7 +298,7 @@ download-operator-sdk: ## Downloads operator sdk tool
 
 CONTROLLER_GEN = $(shell pwd)/bin/controller-gen
 download-controller-gen: ## Download controller-gen tool
-	$(call go-get-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.16.5)
+	$(call go-get-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.21.0)
 
 KUSTOMIZE = $(shell pwd)/bin/kustomize
 download-kustomize: ## Download kustomize tool

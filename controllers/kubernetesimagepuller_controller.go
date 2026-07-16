@@ -305,7 +305,7 @@ func NewImagePullerDeployment(cr *chev1alpha1.KubernetesImagePuller, isOpenShift
 			Name:      deploymentName,
 			Labels:    map[string]string{"app": defaults.AppLabelValue},
 			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(cr, chev1alpha1.SchemeBuilder.GroupVersion.WithKind("KubernetesImagePuller")),
+				*metav1.NewControllerRef(cr, chev1alpha1.GroupVersion.WithKind("KubernetesImagePuller")),
 			},
 		},
 		Spec: appsv1.DeploymentSpec{
