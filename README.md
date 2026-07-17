@@ -201,14 +201,70 @@ $ kubectl apply -f config/samples/che_v1alpha1_kubernetesimagepuller.yaml -n kub
 
 A quirk of this project is that while the repository is named `kubernetes-image-puller-operator`, 
 the operator bundle on OperatorHub is named `kubernetes-imagepuller-operator`.  
-his was caused by the previous version of OLM deployment that required a Quay.io Application.  
+This was caused by the previous version of OLM deployment that required a Quay.io Application.
 
-Run `Release Kubernetes Image Puller operator` GitHub action to release a new bundle.
+##### Step 1: Run the Release GitHub Action
 
-Then, to see these changes on OperatorHub:
+Run the [`Release Kubernetes Image Puller operator`](https://github.com/che-incubator/kubernetes-image-puller-operator/actions/workflows/release.yml) GitHub Action with the following inputs:
+
+| Input | Description | Example                                         |
+|---|---|-------------------------------------------------|
+| `version` | Release version in `X.Y.Z` format | `1.1.2`                                         |
+| `imagePullerImage` | kubernetes-image-puller image to use | `quay.io/eclipse/kubernetes-image-puller:1.1.2` |
+| `forceRecreateTags` | Recreate existing tags (use with caution) | `false`                                         |
+
+##### Step 2: Checkout to the release branch
+
+After the GitHub Action completes, checkout to the release branch:
+
+```bash
+git fetch origin
+git checkout <RELEASE_VERSION>-release
+```
+
+##### Step 3: Test on Kubernetes and OpenShift
+
+Before publishing to OperatorHub, verify the release on both platforms.
+
+**Testing on Kubernetes (e.g. Minikube):**
+
+1. Install cert-manager (required for webhooks on Kubernetes):
+```bash
+kubectl apply --validate=false -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.3/cert-manager.yaml
+```
+2. Deploy the operator using the release catalog:
+```bash
+make deploy
+```
+3. Create a `KubernetesImagePuller` CR and verify:
+```bash
+kubectl apply -f config/samples/che_v1alpha1_kubernetesimagepuller.yaml -n kubernetes-image-puller-operator
+kubectl get pods -n kubernetes-image-puller-operator
+kubectl get daemonsets -A
+```
+4. Verify the image puller daemonset is running and pods are scheduled across nodes.
+5. Verify updating and deleting the CR works correctly.
+
+**Testing on OpenShift:**
+
+1. Deploy the operator:
+```bash
+make deploy
+```
+2. Create a `KubernetesImagePuller` CR and verify:
+```bash
+oc apply -f config/samples/che_v1alpha1_kubernetesimagepuller.yaml -n kubernetes-image-puller-operator
+oc get pods -n kubernetes-image-puller-operator
+oc get daemonsets -A
+```
+3. Verify the image puller daemonset is running and pods are scheduled across nodes.
+4. Verify updating and deleting the CR works correctly.
+
+##### Step 4: Publish to OperatorHub
+
 1. Fork and clone the [`community-operators`](https://github.com/k8s-operatorhub/community-operators) 
 and [`community-operators-prod`](https://github.com/redhat-openshift-ecosystem/community-operators-prod/) repositories.
-2. Copy a new bundle into the `community-operators` and `community-operators-prod` repositories:
+2. Copy the new bundle into both repositories:
 ```bash
 ./make-release.sh <RELEASE_VERSION> --prepare-community-operators-update --community-operators-repository-dir <PROJECT_DIR>/community-operators-prod
 ./make-release.sh <RELEASE_VERSION> --prepare-community-operators-update --community-operators-repository-dir <PROJECT_DIR>/community-operators

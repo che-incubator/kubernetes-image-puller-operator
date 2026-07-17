@@ -35,6 +35,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+const (
+	legacyImageV111 = "quay.io/eclipse/kubernetes-image-puller:1.1.1"
+	legacyImageNext = "quay.io/eclipse/kubernetes-image-puller:next"
+)
+
 // KubernetesImagePullerReconciler reconciles a KubernetesImagePuller object
 type KubernetesImagePullerReconciler struct {
 	// This client, initialized using mgr.Client() above, is a split client
@@ -80,10 +85,12 @@ func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctr
 		instance.Spec.DeploymentName = defaults.DeploymentName
 		needsUpdate = true
 	}
-	if instance.Spec.ImagePullerImage == "" {
-		instance.Spec.ImagePullerImage = defaults.ImagePullerImage
+
+	if instance.Spec.ImagePullerImage == legacyImageV111 || instance.Spec.ImagePullerImage == legacyImageNext {
+		instance.Spec.ImagePullerImage = ""
 		needsUpdate = true
 	}
+
 	if needsUpdate {
 		if err = r.Update(ctx, instance); err != nil {
 			log.Error(err, "Error updating KubernetesImagePuller")
@@ -268,8 +275,9 @@ func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctr
 	}
 
 	// If ImagePullerImage from deployment is different than the spec, update deployment
-	if instance.Spec.ImagePullerImage != instance.Status.ImagePullerImage {
-		instance.Status.ImagePullerImage = instance.Spec.ImagePullerImage
+	effectiveImage := instance.GetImagePullerImage()
+	if instance.Status.ImagePullerImage != effectiveImage {
+		instance.Status.ImagePullerImage = effectiveImage
 		err = r.Status().Update(ctx, instance)
 		if err != nil {
 			log.Error(err, "Error updating custom resource status")
@@ -323,7 +331,7 @@ func NewImagePullerDeployment(cr *chev1alpha1.KubernetesImagePuller, isOpenShift
 					Containers: []corev1.Container{
 						{
 							Name:            defaults.ContainerName,
-							Image:           cr.Spec.ImagePullerImage,
+							Image:           cr.GetImagePullerImage(),
 							SecurityContext: getContainerSecurityContext(isOpenShift),
 							Resources: corev1.ResourceRequirements{
 								Requests: corev1.ResourceList{
