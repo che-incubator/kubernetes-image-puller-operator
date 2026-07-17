@@ -17,7 +17,7 @@ import corev1 "k8s.io/api/core/v1"
 const (
 	ConfigMapName    = "k8s-image-puller"
 	DeploymentName   = "kubernetes-image-puller"
-	ImagePullerImage = "quay.io/eclipse/kubernetes-image-puller:next"
+	ImagePullerImage = "quay.io/eclipse/kubernetes-image-puller:1.1.2"
 
 	AppLabelValue      = "kubernetes-image-puller"
 	ContainerName      = "kubernetes-image-puller"
