@@ -35,6 +35,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+const (
+	legacyImageV111 = "quay.io/eclipse/kubernetes-image-puller:1.1.1"
+	legacyImageNext = "quay.io/eclipse/kubernetes-image-puller:next"
+)
+
 // KubernetesImagePullerReconciler reconciles a KubernetesImagePuller object
 type KubernetesImagePullerReconciler struct {
 	// This client, initialized using mgr.Client() above, is a split client
@@ -81,10 +86,7 @@ func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctr
 		needsUpdate = true
 	}
 
-	// Remove the default image from the spec.
-	// It allows you to use the image tied to the release.
-	if instance.Spec.ImagePullerImage == "quay.io/eclipse/kubernetes-image-puller:1.1.1" ||
-		instance.Spec.ImagePullerImage == "quay.io/eclipse/kubernetes-image-puller:next" {
+	if instance.Spec.ImagePullerImage == legacyImageV111 || instance.Spec.ImagePullerImage == legacyImageNext {
 		instance.Spec.ImagePullerImage = ""
 		needsUpdate = true
 	}
@@ -273,8 +275,9 @@ func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctr
 	}
 
 	// If ImagePullerImage from deployment is different than the spec, update deployment
-	if instance.Status.ImagePullerImage != instance.GetImagePullerImage() {
-		instance.Status.ImagePullerImage = instance.GetImagePullerImage()
+	effectiveImage := instance.GetImagePullerImage()
+	if instance.Status.ImagePullerImage != effectiveImage {
+		instance.Status.ImagePullerImage = effectiveImage
 		err = r.Status().Update(ctx, instance)
 		if err != nil {
 			log.Error(err, "Error updating custom resource status")

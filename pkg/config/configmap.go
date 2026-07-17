@@ -108,5 +108,6 @@ func mergeConfigMapWithCR(instance *chev1alpha1.KubernetesImagePuller, defaultCo
 	}
 
 	defaultConfigMap.Data["KIP_IMAGE"] = instance.GetImagePullerImage()
+
 	return defaultConfigMap
 }

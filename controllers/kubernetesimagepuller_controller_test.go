@@ -118,7 +118,7 @@ func defaultImagePullerWithAllDefaults() *chev1alpha1.KubernetesImagePuller {
 	}
 }
 
-func defaultImagePullerWithConfigMapNameDeploymentNameAndImagePullerImage() *chev1alpha1.KubernetesImagePuller {
+func defaultImagePullerWithConfigMapNameAndDeploymentName() *chev1alpha1.KubernetesImagePuller {
 	return &chev1alpha1.KubernetesImagePuller{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "KubernetesImagePuller",
@@ -186,6 +186,32 @@ func TestSetsAllDefaults(t *testing.T) {
 	}
 }
 
+func TestDeploymentUsesDefaultImageWhenSpecEmpty(t *testing.T) {
+	cr := defaultImagePullerWithConfigMapNameAndDeploymentName()
+	client := setupClient(t, cr,
+		expectedConfigMap(cr),
+		createDaemonsetRole, createDaemonsetRoleBinding, defaultServiceAccount)
+	r := &KubernetesImagePullerReconciler{
+		Client: client,
+		Scheme: scheme.Scheme,
+		Log:    ctrl.Log.WithName("controllers").WithName("kubernetesimagepuller"),
+	}
+
+	_, err := r.Reconcile(context.TODO(), ctrl.Request{NamespacedName: key})
+	if err != nil {
+		t.Errorf("Got error in reconcile: %v", err)
+	}
+
+	got := &appsv1.Deployment{}
+	if err := client.Get(context.TODO(), types.NamespacedName{Namespace: namespace, Name: defaultDeploymentName}, got); err != nil {
+		t.Errorf("Error getting deployment: %v", err)
+	}
+
+	if got.Spec.Template.Spec.Containers[0].Image != defaultImagePullerImage {
+		t.Errorf("Expected deployment image %q, got %q", defaultImagePullerImage, got.Spec.Template.Spec.Containers[0].Image)
+	}
+}
+
 func TestCreatesRole(t *testing.T) {
 	type testcase struct {
 		name string
@@ -196,7 +222,7 @@ func TestCreatesRole(t *testing.T) {
 
 	for _, tc := range []testcase{{
 		name: "default",
-		cr:   defaultImagePullerWithConfigMapNameDeploymentNameAndImagePullerImage(),
+		cr:   defaultImagePullerWithConfigMapNameAndDeploymentName(),
 		want: createDaemonsetRole,
 		got:  &rbacv1.Role{},
 	}} {
@@ -234,7 +260,7 @@ func TestCreatesRoleBinding(t *testing.T) {
 
 	for _, tc := range []testcase{{
 		name: "default",
-		cr:   defaultImagePullerWithConfigMapNameDeploymentNameAndImagePullerImage(),
+		cr:   defaultImagePullerWithConfigMapNameAndDeploymentName(),
 		want: createDaemonsetRoleBinding,
 		got:  &rbacv1.RoleBinding{},
 	}} {
@@ -272,7 +298,7 @@ func TestCreatesServiceAccount(t *testing.T) {
 
 	for _, tc := range []testcase{{
 		name: "default",
-		cr:   defaultImagePullerWithConfigMapNameDeploymentNameAndImagePullerImage(),
+		cr:   defaultImagePullerWithConfigMapNameAndDeploymentName(),
 		want: defaultServiceAccount,
 		got:  &corev1.ServiceAccount{},
 	}} {
@@ -301,11 +327,11 @@ func TestCreatesServiceAccount(t *testing.T) {
 }
 
 func TestCreatesDeployment(t *testing.T) {
-	client := setupClient(t, defaultImagePullerWithConfigMapNameDeploymentNameAndImagePullerImage(),
-		expectedConfigMap(defaultImagePullerWithConfigMapNameDeploymentNameAndImagePullerImage()),
+	client := setupClient(t, defaultImagePullerWithConfigMapNameAndDeploymentName(),
+		expectedConfigMap(defaultImagePullerWithConfigMapNameAndDeploymentName()),
 		createDaemonsetRole, createDaemonsetRoleBinding, defaultServiceAccount)
 	got := &appsv1.Deployment{}
-	want := expectedDeployment(defaultImagePullerWithConfigMapNameDeploymentNameAndImagePullerImage())
+	want := expectedDeployment(defaultImagePullerWithConfigMapNameAndDeploymentName())
 	r := &KubernetesImagePullerReconciler{
 		Client: client,
 		Scheme: scheme.Scheme,
@@ -479,7 +505,7 @@ func TestCreatesConfigMap(t *testing.T) {
 
 	for _, tc := range []testcase{{
 		name: "default",
-		cr:   defaultImagePullerWithConfigMapNameDeploymentNameAndImagePullerImage(),
+		cr:   defaultImagePullerWithConfigMapNameAndDeploymentName(),
 		want: expectedConfigMap(defaultImagePuller()),
 		got:  &corev1.ConfigMap{},
 	},
@@ -664,7 +690,7 @@ func TestUpdatesConfigMap(t *testing.T) {
 					DeploymentName: defaultDeploymentName,
 				},
 			},
-			old: expectedConfigMap(defaultImagePullerWithConfigMapNameDeploymentNameAndImagePullerImage()),
+			old: expectedConfigMap(defaultImagePullerWithConfigMapNameAndDeploymentName()),
 			want: &corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace:       namespace,

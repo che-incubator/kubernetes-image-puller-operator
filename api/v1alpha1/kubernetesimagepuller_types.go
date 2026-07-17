@@ -13,6 +13,7 @@
 package v1alpha1
 
 import (
+	"github.com/che-incubator/kubernetes-image-puller-operator/pkg/defaults"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -81,6 +82,13 @@ type KubernetesImagePullerList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []KubernetesImagePuller `json:"items"`
+}
+
+func (k *KubernetesImagePuller) GetImagePullerImage() string {
+	if k.Spec.ImagePullerImage != "" {
+		return k.Spec.ImagePullerImage
+	}
+	return defaults.ImagePullerImage
 }
 
 func addKnownTypes(s *runtime.Scheme) error {
