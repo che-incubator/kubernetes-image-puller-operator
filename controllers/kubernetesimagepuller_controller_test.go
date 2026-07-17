@@ -787,9 +787,9 @@ func TestUpdatesConfigMap(t *testing.T) {
 }
 
 func TestAnnotationRolloutOnConfigMapChange(t *testing.T) {
-	cr := defaultImagePullerWithConfigMapNameDeploymentNameAndImagePullerImage()
+	cr := defaultImagePullerWithConfigMapNameAndDeploymentName()
 	cr.Spec.DaemonsetName = "new-daemonset"
-	oldConfigMap := expectedConfigMap(defaultImagePullerWithConfigMapNameDeploymentNameAndImagePullerImage())
+	oldConfigMap := expectedConfigMap(defaultImagePullerWithConfigMapNameAndDeploymentName())
 	deployment := NewImagePullerDeployment(cr, false)
 	deployment.ResourceVersion = "1"
 
