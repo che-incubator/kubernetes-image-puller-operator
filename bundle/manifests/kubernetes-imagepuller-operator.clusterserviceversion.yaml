@@ -30,14 +30,14 @@ metadata:
     capabilities: Seamless Upgrades
     categories: Developer Tools
     certified: "false"
-    containerImage: quay.io/eclipse/kubernetes-image-puller-operator:1.1.1
-    createdAt: "2026-07-14T13:25:36Z"
+    containerImage: quay.io/eclipse/kubernetes-image-puller-operator:1.1.2
+    createdAt: "2026-07-17T08:02:16Z"
     description: Create and manage kubernetes-image-puller instances.
     operators.operatorframework.io/builder: operator-sdk-v1.38.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
     repository: https://github.com/che-incubator/kubernetes-image-puller-operator
     support: Community
-  name: kubernetes-imagepuller-operator.v1.1.1
+  name: kubernetes-imagepuller-operator.v1.1.2
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -164,7 +164,7 @@ spec:
                             fieldPath: metadata.name
                       - name: OPERATOR_NAME
                         value: kubernetes-image-puller-operator
-                    image: quay.io/eclipse/kubernetes-image-puller-operator:1.1.1
+                    image: quay.io/eclipse/kubernetes-image-puller-operator:1.1.2
                     imagePullPolicy: Always
                     livenessProbe:
                       httpGet:
@@ -364,7 +364,7 @@ spec:
   selector:
     matchLabels:
       app: kubernetes-image-puller-operator
-  version: 1.1.1
+  version: 1.1.2
   webhookdefinitions:
     - admissionReviewVersions:
         - v1
@@ -386,4 +386,4 @@ spec:
       targetPort: 9443
       type: ValidatingAdmissionWebhook
       webhookPath: /validate-che-eclipse-org-v1alpha1-kubernetesimagepuller
-  replaces: kubernetes-imagepuller-operator.v1.1.0
+  replaces: kubernetes-imagepuller-operator.v1.1.1
