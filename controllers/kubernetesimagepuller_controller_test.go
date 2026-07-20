@@ -819,6 +819,59 @@ func TestAnnotationRolloutOnConfigMapChange(t *testing.T) {
 	}
 }
 
+func TestDeletesOldConfigMapOnRename(t *testing.T) {
+	oldConfigMap := expectedConfigMap(defaultImagePullerWithConfigMapNameAndDeploymentName())
+	cr := &chev1alpha1.KubernetesImagePuller{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      "test-puller",
+		},
+		Spec: chev1alpha1.KubernetesImagePullerSpec{
+			ConfigMapName:  "new-configmap",
+			DeploymentName: defaultDeploymentName,
+		},
+	}
+
+	c := setupClient(t, cr, oldConfigMap, NewImagePullerDeployment(cr, false),
+		createDaemonsetRole, createDaemonsetRoleBinding, defaultServiceAccount)
+	r := &KubernetesImagePullerReconciler{
+		Client: c,
+		Scheme: scheme.Scheme,
+		Log:    ctrl.Log.WithName("controllers").WithName("kubernetesimagepuller"),
+	}
+
+	// First reconcile: creates the new ConfigMap
+	if _, err := r.Reconcile(context.TODO(), ctrl.Request{NamespacedName: key}); err != nil {
+		t.Fatalf("First reconcile error: %v", err)
+	}
+
+	// Verify intermediate state: both old and new ConfigMaps should exist
+	configMaps := &corev1.ConfigMapList{}
+	if err := c.List(context.TODO(), configMaps, client.MatchingLabels{"app": "kubernetes-image-puller"}); err != nil {
+		t.Fatalf("Error listing ConfigMaps after first reconcile: %v", err)
+	}
+	if len(configMaps.Items) != 2 {
+		t.Fatalf("Expected 2 ConfigMaps after first reconcile but got %v", len(configMaps.Items))
+	}
+
+	// Second reconcile: cleans up the old ConfigMap
+	if _, err := r.Reconcile(context.TODO(), ctrl.Request{NamespacedName: key}); err != nil {
+		t.Fatalf("Second reconcile error: %v", err)
+	}
+
+	configMaps = &corev1.ConfigMapList{}
+	if err := c.List(context.TODO(), configMaps, client.MatchingLabels{"app": "kubernetes-image-puller"}); err != nil {
+		t.Fatalf("Error listing ConfigMaps: %v", err)
+	}
+
+	if len(configMaps.Items) != 1 {
+		t.Fatalf("Expected 1 ConfigMap but got %v", len(configMaps.Items))
+	}
+	if configMaps.Items[0].Name != "new-configmap" {
+		t.Errorf("Expected ConfigMap named 'new-configmap' but got '%v'", configMaps.Items[0].Name)
+	}
+}
+
 func TestDeletesOldDeploymentOnNameChange(t *testing.T) {
 	type testcase struct {
 		name  string

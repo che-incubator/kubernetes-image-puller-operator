@@ -201,37 +201,25 @@ func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctr
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	// Find all configmaps owned by this imagepuller and delete ones that are not named ConfigMapName
+	// Clean up any old ConfigMaps owned by this instance that no longer match the desired name
 	configMaps := &corev1.ConfigMapList{}
-	if err = r.List(ctx, configMaps, client.MatchingLabels{"app": defaults.AppLabelValue}); err != nil {
+	if err = r.List(ctx, configMaps, client.InNamespace(instance.Namespace), client.MatchingLabels{"app": defaults.AppLabelValue}); err != nil {
 		log.Error(err, "Could not list ConfigMaps")
 		return ctrl.Result{}, err
-	} else {
-
-		for _, cm := range configMaps.Items {
-			if cm.Name != instance.Spec.ConfigMapName && len(cm.OwnerReferences) > 0 {
-				if cm.OwnerReferences[0].Name == instance.Name {
+	}
+	for _, cm := range configMaps.Items {
+		if cm.Name != instance.Spec.ConfigMapName {
+			for _, ownerRef := range cm.OwnerReferences {
+				if ownerRef.Name == instance.Name {
+					log.Info("Deleting old ConfigMap after rename", "ConfigMap.Name", cm.Name, "NewConfigMap.Name", instance.Spec.ConfigMapName)
 					if err = r.Delete(ctx, &cm); err != nil {
 						log.Error(err, "Could not delete ConfigMap")
 						return ctrl.Result{}, err
 					}
+					break
 				}
 			}
 		}
-	}
-
-	// Create a new ConfigMap if the names differ
-	if foundConfigMap.Name != instance.Spec.ConfigMapName {
-		newConfigMap := config.NewImagePullerConfigMap(instance)
-		if err = r.Create(ctx, newConfigMap); err != nil {
-			log.Error(err, "Could not create new ConfigMap")
-			return ctrl.Result{}, err
-		}
-		if err = r.Delete(ctx, foundConfigMap); err != nil {
-			log.Error(err, "Could not delete old ConfigMap")
-			return ctrl.Result{}, err
-		}
-		return ctrl.Result{}, nil
 	}
 
 	// Check if kubernetes image puller deployment exists, and create it if it does not.
