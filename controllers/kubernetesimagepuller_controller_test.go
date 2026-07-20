@@ -326,6 +326,126 @@ func TestCreatesServiceAccount(t *testing.T) {
 	}
 }
 
+func TestUpdatesRoleOnDrift(t *testing.T) {
+	cr := defaultImagePullerWithConfigMapNameAndDeploymentName()
+	driftedRole := &rbacv1.Role{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            defaults.RBACName,
+			Namespace:       namespace,
+			OwnerReferences: []metav1.OwnerReference{defaultCROwnerReference},
+		},
+		Rules: []rbacv1.PolicyRule{{
+			APIGroups: []string{"apps"},
+			Resources: []string{"daemonsets"},
+			Verbs:     []string{"create", "delete"},
+		}},
+	}
+
+	c := setupClient(t, cr, driftedRole, createDaemonsetRoleBinding, defaultServiceAccount,
+		expectedConfigMap(cr), expectedDeployment(cr))
+	r := &KubernetesImagePullerReconciler{
+		Client: c,
+		Scheme: scheme.Scheme,
+		Log:    ctrl.Log.WithName("controllers").WithName("kubernetesimagepuller"),
+	}
+
+	if _, err := r.Reconcile(context.TODO(), ctrl.Request{NamespacedName: key}); err != nil {
+		t.Fatalf("Reconcile error: %v", err)
+	}
+
+	got := &rbacv1.Role{}
+	if err := c.Get(context.TODO(), types.NamespacedName{Namespace: namespace, Name: defaults.RBACName}, got); err != nil {
+		t.Fatalf("Error getting Role: %v", err)
+	}
+
+	if d := cmp.Diff(createDaemonsetRole.Rules, got.Rules); d != "" {
+		t.Errorf("Role rules not corrected (-want, +got): %s", d)
+	}
+}
+
+func TestUpdatesRoleBindingSubjectsOnDrift(t *testing.T) {
+	cr := defaultImagePullerWithConfigMapNameAndDeploymentName()
+	driftedRoleBinding := &rbacv1.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            defaults.RBACName,
+			Namespace:       namespace,
+			OwnerReferences: []metav1.OwnerReference{defaultCROwnerReference},
+		},
+		Subjects: []rbacv1.Subject{{
+			Kind: "ServiceAccount",
+			Name: "wrong-service-account",
+		}},
+		RoleRef: rbacv1.RoleRef{
+			APIGroup: rbacv1.SchemeGroupVersion.Group,
+			Kind:     "Role",
+			Name:     defaults.RBACName,
+		},
+	}
+
+	c := setupClient(t, cr, createDaemonsetRole, driftedRoleBinding, defaultServiceAccount,
+		expectedConfigMap(cr), expectedDeployment(cr))
+	r := &KubernetesImagePullerReconciler{
+		Client: c,
+		Scheme: scheme.Scheme,
+		Log:    ctrl.Log.WithName("controllers").WithName("kubernetesimagepuller"),
+	}
+
+	if _, err := r.Reconcile(context.TODO(), ctrl.Request{NamespacedName: key}); err != nil {
+		t.Fatalf("Reconcile error: %v", err)
+	}
+
+	got := &rbacv1.RoleBinding{}
+	if err := c.Get(context.TODO(), types.NamespacedName{Namespace: namespace, Name: defaults.RBACName}, got); err != nil {
+		t.Fatalf("Error getting RoleBinding: %v", err)
+	}
+
+	if d := cmp.Diff(createDaemonsetRoleBinding.Subjects, got.Subjects); d != "" {
+		t.Errorf("RoleBinding subjects not corrected (-want, +got): %s", d)
+	}
+}
+
+func TestDeletesRoleBindingOnRoleRefDrift(t *testing.T) {
+	cr := defaultImagePullerWithConfigMapNameAndDeploymentName()
+	driftedRoleBinding := &rbacv1.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            defaults.RBACName,
+			Namespace:       namespace,
+			OwnerReferences: []metav1.OwnerReference{defaultCROwnerReference},
+		},
+		Subjects: []rbacv1.Subject{{
+			Kind: "ServiceAccount",
+			Name: defaults.ServiceAccountName,
+		}},
+		RoleRef: rbacv1.RoleRef{
+			APIGroup: rbacv1.SchemeGroupVersion.Group,
+			Kind:     "Role",
+			Name:     "wrong-role",
+		},
+	}
+
+	c := setupClient(t, cr, createDaemonsetRole, driftedRoleBinding, defaultServiceAccount,
+		expectedConfigMap(cr), expectedDeployment(cr))
+	r := &KubernetesImagePullerReconciler{
+		Client: c,
+		Scheme: scheme.Scheme,
+		Log:    ctrl.Log.WithName("controllers").WithName("kubernetesimagepuller"),
+	}
+
+	result, err := r.Reconcile(context.TODO(), ctrl.Request{NamespacedName: key})
+	if err != nil {
+		t.Fatalf("Reconcile error: %v", err)
+	}
+	if result == (ctrl.Result{}) {
+		t.Error("Expected requeue after deleting RoleBinding with drifted RoleRef")
+	}
+
+	got := &rbacv1.RoleBinding{}
+	err = c.Get(context.TODO(), types.NamespacedName{Namespace: namespace, Name: defaults.RBACName}, got)
+	if err == nil {
+		t.Error("Expected RoleBinding to be deleted, but it still exists")
+	}
+}
+
 func TestCreatesDeployment(t *testing.T) {
 	client := setupClient(t, defaultImagePullerWithConfigMapNameAndDeploymentName(),
 		expectedConfigMap(defaultImagePullerWithConfigMapNameAndDeploymentName()),
@@ -787,9 +907,9 @@ func TestUpdatesConfigMap(t *testing.T) {
 }
 
 func TestAnnotationRolloutOnConfigMapChange(t *testing.T) {
-	cr := defaultImagePullerWithConfigMapNameDeploymentNameAndImagePullerImage()
+	cr := defaultImagePullerWithConfigMapNameAndDeploymentName()
 	cr.Spec.DaemonsetName = "new-daemonset"
-	oldConfigMap := expectedConfigMap(defaultImagePullerWithConfigMapNameDeploymentNameAndImagePullerImage())
+	oldConfigMap := expectedConfigMap(defaultImagePullerWithConfigMapNameAndDeploymentName())
 	deployment := NewImagePullerDeployment(cr, false)
 	deployment.ResourceVersion = "1"
 
