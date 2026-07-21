@@ -29,6 +29,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -65,10 +66,10 @@ type KubernetesImagePullerReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.8.3/pkg/reconcile
 func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("kubernetesimagepuller", req.NamespacedName)
+
 	// Fetch the KubernetesImagePuller instance
 	instance := &chev1alpha1.KubernetesImagePuller{}
-	err := r.Get(ctx, req.NamespacedName, instance)
-	if err != nil {
+	if err := r.Get(ctx, req.NamespacedName, instance); err != nil {
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
@@ -79,6 +80,20 @@ func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctr
 		return ctrl.Result{}, err
 	}
 
+	result, reconcileErr := r.reconcile(ctx, log, instance)
+
+	if err := r.updateConditions(ctx, log, instance, result, reconcileErr); err != nil {
+		if reconcileErr != nil {
+			log.Error(err, "Error updating status conditions after reconcile error")
+			return result, reconcileErr
+		}
+		return ctrl.Result{}, err
+	}
+
+	return result, reconcileErr
+}
+
+func (r *KubernetesImagePullerReconciler) reconcile(ctx context.Context, log logr.Logger, instance *chev1alpha1.KubernetesImagePuller) (ctrl.Result, error) {
 	// Set defaults for any unset spec fields in a single update
 	needsUpdate := false
 	if instance.Spec.ConfigMapName == "" {
@@ -96,7 +111,7 @@ func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctr
 	}
 
 	if needsUpdate {
-		if err = r.Update(ctx, instance); err != nil {
+		if err := r.Update(ctx, instance); err != nil {
 			log.Error(err, "Error updating KubernetesImagePuller")
 			return ctrl.Result{}, err
 		}
@@ -105,7 +120,7 @@ func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctr
 
 	// Create the Role to allow the ServiceAccount to create Daemonsets
 	foundRole := &rbacv1.Role{}
-	err = r.Get(ctx, types.NamespacedName{Namespace: instance.Namespace, Name: defaults.RBACName}, foundRole)
+	err := r.Get(ctx, types.NamespacedName{Namespace: instance.Namespace, Name: defaults.RBACName}, foundRole)
 	if err != nil && errors.IsNotFound(err) {
 		log.Info("Creating create-daemonset role")
 		if err = r.Create(ctx, rbac.NewRole(instance)); err != nil {
@@ -285,6 +300,136 @@ func (r *KubernetesImagePullerReconciler) Reconcile(ctx context.Context, req ctr
 	log.Info("End Reconcile")
 
 	return ctrl.Result{}, nil
+}
+
+func (r *KubernetesImagePullerReconciler) updateConditions(ctx context.Context, log logr.Logger, instance *chev1alpha1.KubernetesImagePuller, result ctrl.Result, reconcileErr error) error {
+	// Re-fetch the instance to get the latest version before updating status
+	latest := &chev1alpha1.KubernetesImagePuller{}
+	if err := r.Get(ctx, types.NamespacedName{Name: instance.Name, Namespace: instance.Namespace}, latest); err != nil {
+		if errors.IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+
+	base := latest.DeepCopy()
+	generation := latest.Generation
+
+	var changed bool
+
+	if reconcileErr != nil {
+		changed = apimeta.SetStatusCondition(&latest.Status.Conditions, metav1.Condition{
+			Type:               chev1alpha1.ConditionDegraded,
+			Status:             metav1.ConditionTrue,
+			ObservedGeneration: generation,
+			Reason:             "ReconcileError",
+			Message:            reconcileErr.Error(),
+		}) || changed
+		changed = apimeta.SetStatusCondition(&latest.Status.Conditions, metav1.Condition{
+			Type:               chev1alpha1.ConditionReady,
+			Status:             metav1.ConditionFalse,
+			ObservedGeneration: generation,
+			Reason:             "ReconcileError",
+			Message:            reconcileErr.Error(),
+		}) || changed
+		changed = apimeta.SetStatusCondition(&latest.Status.Conditions, metav1.Condition{
+			Type:               chev1alpha1.ConditionProgressing,
+			Status:             metav1.ConditionFalse,
+			ObservedGeneration: generation,
+			Reason:             "ReconcileError",
+			Message:            reconcileErr.Error(),
+		}) || changed
+		if !changed {
+			return nil
+		}
+		patch := client.MergeFrom(base)
+		return r.Status().Patch(ctx, latest, patch)
+	}
+
+	if result != (ctrl.Result{}) {
+		changed = apimeta.SetStatusCondition(&latest.Status.Conditions, metav1.Condition{
+			Type:               chev1alpha1.ConditionProgressing,
+			Status:             metav1.ConditionTrue,
+			ObservedGeneration: generation,
+			Reason:             "Reconciling",
+			Message:            "Resource creation or update in progress",
+		}) || changed
+		changed = apimeta.SetStatusCondition(&latest.Status.Conditions, metav1.Condition{
+			Type:               chev1alpha1.ConditionReady,
+			Status:             metav1.ConditionFalse,
+			ObservedGeneration: generation,
+			Reason:             "Reconciling",
+			Message:            "Reconciliation in progress",
+		}) || changed
+		changed = apimeta.SetStatusCondition(&latest.Status.Conditions, metav1.Condition{
+			Type:               chev1alpha1.ConditionDegraded,
+			Status:             metav1.ConditionFalse,
+			ObservedGeneration: generation,
+			Reason:             "Reconciling",
+		}) || changed
+		if !changed {
+			return nil
+		}
+		patch := client.MergeFrom(base)
+		return r.Status().Patch(ctx, latest, patch)
+	}
+
+	// Successful reconcile with no requeue — check deployment availability
+	deployment := &appsv1.Deployment{}
+	deploymentReady := false
+	if err := r.Get(ctx, types.NamespacedName{Name: latest.Spec.DeploymentName, Namespace: latest.Namespace}, deployment); err == nil {
+		deploymentReady = deployment.Status.AvailableReplicas >= 1
+	} else if !errors.IsNotFound(err) {
+		return err
+	}
+
+	if deploymentReady {
+		changed = apimeta.SetStatusCondition(&latest.Status.Conditions, metav1.Condition{
+			Type:               chev1alpha1.ConditionReady,
+			Status:             metav1.ConditionTrue,
+			ObservedGeneration: generation,
+			Reason:             "AllResourcesReady",
+			Message:            "All owned resources are available",
+		}) || changed
+	} else {
+		changed = apimeta.SetStatusCondition(&latest.Status.Conditions, metav1.Condition{
+			Type:               chev1alpha1.ConditionReady,
+			Status:             metav1.ConditionFalse,
+			ObservedGeneration: generation,
+			Reason:             "DeploymentNotAvailable",
+			Message:            "Deployment does not have available replicas",
+		}) || changed
+	}
+
+	if deploymentReady {
+		changed = apimeta.SetStatusCondition(&latest.Status.Conditions, metav1.Condition{
+			Type:               chev1alpha1.ConditionProgressing,
+			Status:             metav1.ConditionFalse,
+			ObservedGeneration: generation,
+			Reason:             "ReconcileComplete",
+		}) || changed
+	} else {
+		changed = apimeta.SetStatusCondition(&latest.Status.Conditions, metav1.Condition{
+			Type:               chev1alpha1.ConditionProgressing,
+			Status:             metav1.ConditionTrue,
+			ObservedGeneration: generation,
+			Reason:             "DeploymentNotAvailable",
+			Message:            "Waiting for deployment to become available",
+		}) || changed
+	}
+
+	changed = apimeta.SetStatusCondition(&latest.Status.Conditions, metav1.Condition{
+		Type:               chev1alpha1.ConditionDegraded,
+		Status:             metav1.ConditionFalse,
+		ObservedGeneration: generation,
+		Reason:             "ReconcileComplete",
+	}) || changed
+
+	if !changed {
+		return nil
+	}
+	patch := client.MergeFrom(base)
+	return r.Status().Patch(ctx, latest, patch)
 }
 
 func NewImagePullerDeployment(cr *chev1alpha1.KubernetesImagePuller, isOpenShift bool) *appsv1.Deployment {
