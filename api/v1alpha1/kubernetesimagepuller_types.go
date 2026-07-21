@@ -53,6 +53,17 @@ type KubernetesImagePullerSpec struct {
 	ImagePullerImage string `json:"imagePullerImage,omitempty"`
 }
 
+// Condition type constants for KubernetesImagePuller status.
+//
+// Progressing is keyed off ctrl.Result (any requeue) and deployment
+// availability — it does not track individual sub-resource rollouts.
+// Degraded is set only on reconcile errors, not on transient unavailability.
+const (
+	ConditionReady       = "Ready"
+	ConditionProgressing = "Progressing"
+	ConditionDegraded    = "Degraded"
+)
+
 // KubernetesImagePullerStatus defines the observed state of KubernetesImagePuller
 type KubernetesImagePullerStatus struct {
 	// KubernetesImagePuller image in use.
@@ -60,12 +71,20 @@ type KubernetesImagePullerStatus struct {
 	// +operator-sdk:csv:customresourcedefinitions:type=status,displayName="Image"
 	// +operator-sdk:csv:customresourcedefinitions:type=status,xDescriptors="urn:alm:descriptor:text"
 	ImagePullerImage string `json:"imagePullerImage,omitempty"`
+	// +operator-sdk:csv:customresourcedefinitions:type=status
+	// +operator-sdk:csv:customresourcedefinitions:type=status,displayName="Conditions"
+	// +operator-sdk:csv:customresourcedefinitions:type=status,xDescriptors="urn:alm:descriptor:io.kubernetes.conditions"
+	// +listType=map
+	// +listMapKey=type
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 // KubernetesImagePuller is the Schema for the kubernetesimagepullers API
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:path=kubernetesimagepullers,scope=Namespaced
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=`.status.conditions[?(@.type=="Ready")].status`
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=`.metadata.creationTimestamp`
 // +operator-sdk:csv:customresourcedefinitions:resources={{ConfigMap,v1},{Deployment,apps/v1},{DaemonSet,apps/v1}}
 type KubernetesImagePuller struct {
 	metav1.TypeMeta   `json:",inline"`

@@ -23,6 +23,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -165,6 +166,7 @@ func TestSetsAllDefaults(t *testing.T) {
 	client := setupClient(t, defaultImagePuller())
 	got := &chev1alpha1.KubernetesImagePuller{}
 	want := defaultImagePullerWithAllDefaults()
+	want.ResourceVersion = "2"
 
 	r := &KubernetesImagePullerReconciler{
 		Client: client,
@@ -181,7 +183,10 @@ func TestSetsAllDefaults(t *testing.T) {
 		t.Errorf("Error getting KubernetesImagePuller")
 	}
 
-	if d := cmp.Diff(want, got); d != "" {
+	ignoreConditions := cmp.FilterPath(func(p cmp.Path) bool {
+		return p.String() == "Status.Conditions"
+	}, cmp.Ignore())
+	if d := cmp.Diff(want, got, ignoreConditions); d != "" {
 		t.Errorf("Error (-want, +got): %s", d)
 	}
 }
@@ -421,7 +426,7 @@ func TestUpdatesImagePullerImageStatus(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            "test-puller",
 				Namespace:       namespace,
-				ResourceVersion: "1",
+				ResourceVersion: "2",
 			},
 			Spec: chev1alpha1.KubernetesImagePullerSpec{
 				ConfigMapName:  defaultConfigMapName,
@@ -456,7 +461,7 @@ func TestUpdatesImagePullerImageStatus(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            "test-puller",
 				Namespace:       namespace,
-				ResourceVersion: "1",
+				ResourceVersion: "2",
 			},
 			Spec: chev1alpha1.KubernetesImagePullerSpec{
 				ConfigMapName:    defaultConfigMapName,
@@ -487,7 +492,10 @@ func TestUpdatesImagePullerImageStatus(t *testing.T) {
 				t.Errorf("Error getting KubernetesImagePuller")
 			}
 
-			if d := cmp.Diff(tc.want, got); d != "" {
+			ignoreConditions := cmp.FilterPath(func(p cmp.Path) bool {
+				return p.String() == "Status.Conditions"
+			}, cmp.Ignore())
+			if d := cmp.Diff(tc.want, got, ignoreConditions); d != "" {
 				t.Errorf("Error (-want, +got): %s", d)
 			}
 		})
@@ -863,5 +871,138 @@ func TestDeletesOldDeploymentOnNameChange(t *testing.T) {
 				t.Errorf("Expected a deployment named %v but got %v", tc.newCr.Spec.DeploymentName, deployments.Items[0].Name)
 			}
 		})
+	}
+}
+
+func TestSetsProgressingConditionDuringResourceCreation(t *testing.T) {
+	cr := defaultImagePullerWithConfigMapNameAndDeploymentName()
+	c := setupClient(t, cr)
+	r := &KubernetesImagePullerReconciler{
+		Client: c,
+		Scheme: scheme.Scheme,
+		Log:    ctrl.Log.WithName("controllers").WithName("kubernetesimagepuller"),
+	}
+
+	result, err := r.Reconcile(context.TODO(), ctrl.Request{NamespacedName: key})
+	if err != nil {
+		t.Fatalf("Got error in reconcile: %v", err)
+	}
+	if result == (ctrl.Result{}) {
+		t.Fatalf("Expected requeue but got none")
+	}
+
+	got := &chev1alpha1.KubernetesImagePuller{}
+	if err := c.Get(context.TODO(), key, got); err != nil {
+		t.Fatalf("Error getting KubernetesImagePuller: %v", err)
+	}
+
+	if cond := apimeta.FindStatusCondition(got.Status.Conditions, chev1alpha1.ConditionProgressing); cond == nil {
+		t.Error("Expected Progressing condition to be set")
+	} else if cond.Status != metav1.ConditionTrue {
+		t.Errorf("Expected Progressing=True, got %s", cond.Status)
+	}
+
+	if cond := apimeta.FindStatusCondition(got.Status.Conditions, chev1alpha1.ConditionReady); cond == nil {
+		t.Error("Expected Ready condition to be set")
+	} else if cond.Status != metav1.ConditionFalse {
+		t.Errorf("Expected Ready=False during progressing, got %s", cond.Status)
+	}
+}
+
+func TestSetsReadyConditionWhenAllResourcesExist(t *testing.T) {
+	cr := defaultImagePullerWithConfigMapNameAndDeploymentName()
+	cr.Status.ImagePullerImage = defaultImagePullerImage
+
+	deployment := expectedDeployment(cr)
+	deployment.Status.AvailableReplicas = 1
+	deployment.Status.ReadyReplicas = 1
+	deployment.Status.Replicas = 1
+
+	c := setupClient(t, cr, expectedConfigMap(cr), deployment,
+		createDaemonsetRole, createDaemonsetRoleBinding, defaultServiceAccount)
+	r := &KubernetesImagePullerReconciler{
+		Client: c,
+		Scheme: scheme.Scheme,
+		Log:    ctrl.Log.WithName("controllers").WithName("kubernetesimagepuller"),
+	}
+
+	result, err := r.Reconcile(context.TODO(), ctrl.Request{NamespacedName: key})
+	if err != nil {
+		t.Fatalf("Got error in reconcile: %v", err)
+	}
+	if result != (ctrl.Result{}) {
+		t.Fatalf("Expected no requeue but got requeue")
+	}
+
+	got := &chev1alpha1.KubernetesImagePuller{}
+	if err := c.Get(context.TODO(), key, got); err != nil {
+		t.Fatalf("Error getting KubernetesImagePuller: %v", err)
+	}
+
+	if cond := apimeta.FindStatusCondition(got.Status.Conditions, chev1alpha1.ConditionReady); cond == nil {
+		t.Error("Expected Ready condition to be set")
+	} else if cond.Status != metav1.ConditionTrue {
+		t.Errorf("Expected Ready=True, got %s", cond.Status)
+	}
+
+	if cond := apimeta.FindStatusCondition(got.Status.Conditions, chev1alpha1.ConditionProgressing); cond == nil {
+		t.Error("Expected Progressing condition to be set")
+	} else if cond.Status != metav1.ConditionFalse {
+		t.Errorf("Expected Progressing=False, got %s", cond.Status)
+	}
+
+	if cond := apimeta.FindStatusCondition(got.Status.Conditions, chev1alpha1.ConditionDegraded); cond == nil {
+		t.Error("Expected Degraded condition to be set")
+	} else if cond.Status != metav1.ConditionFalse {
+		t.Errorf("Expected Degraded=False, got %s", cond.Status)
+	}
+}
+
+func TestSetsReadyFalseWhenDeploymentNotAvailable(t *testing.T) {
+	cr := defaultImagePullerWithConfigMapNameAndDeploymentName()
+	cr.Status.ImagePullerImage = defaultImagePullerImage
+
+	deployment := expectedDeployment(cr)
+	deployment.Status.AvailableReplicas = 0
+
+	c := setupClient(t, cr, expectedConfigMap(cr), deployment,
+		createDaemonsetRole, createDaemonsetRoleBinding, defaultServiceAccount)
+	r := &KubernetesImagePullerReconciler{
+		Client: c,
+		Scheme: scheme.Scheme,
+		Log:    ctrl.Log.WithName("controllers").WithName("kubernetesimagepuller"),
+	}
+
+	_, err := r.Reconcile(context.TODO(), ctrl.Request{NamespacedName: key})
+	if err != nil {
+		t.Fatalf("Got error in reconcile: %v", err)
+	}
+
+	got := &chev1alpha1.KubernetesImagePuller{}
+	if err := c.Get(context.TODO(), key, got); err != nil {
+		t.Fatalf("Error getting KubernetesImagePuller: %v", err)
+	}
+
+	if cond := apimeta.FindStatusCondition(got.Status.Conditions, chev1alpha1.ConditionReady); cond == nil {
+		t.Error("Expected Ready condition to be set")
+	} else {
+		if cond.Status != metav1.ConditionFalse {
+			t.Errorf("Expected Ready=False, got %s", cond.Status)
+		}
+		if cond.Reason != "DeploymentNotAvailable" {
+			t.Errorf("Expected reason DeploymentNotAvailable, got %s", cond.Reason)
+		}
+	}
+
+	if cond := apimeta.FindStatusCondition(got.Status.Conditions, chev1alpha1.ConditionProgressing); cond == nil {
+		t.Error("Expected Progressing condition to be set")
+	} else if cond.Status != metav1.ConditionTrue {
+		t.Errorf("Expected Progressing=True when deployment not available, got %s", cond.Status)
+	}
+
+	if cond := apimeta.FindStatusCondition(got.Status.Conditions, chev1alpha1.ConditionDegraded); cond == nil {
+		t.Error("Expected Degraded condition to be set")
+	} else if cond.Status != metav1.ConditionFalse {
+		t.Errorf("Expected Degraded=False when deployment not available, got %s", cond.Status)
 	}
 }
