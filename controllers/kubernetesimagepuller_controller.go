@@ -18,6 +18,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"sort"
 
 	chev1alpha1 "github.com/che-incubator/kubernetes-image-puller-operator/api/v1alpha1"
@@ -118,7 +119,7 @@ func (r *KubernetesImagePullerReconciler) reconcile(ctx context.Context, log log
 		return ctrl.Result{}, nil
 	}
 
-	// Create the Role to allow the ServiceAccount to create Daemonsets
+	// Create or update the Role to allow the ServiceAccount to create Daemonsets
 	foundRole := &rbacv1.Role{}
 	err := r.Get(ctx, types.NamespacedName{Namespace: instance.Namespace, Name: defaults.RBACName}, foundRole)
 	if err != nil && errors.IsNotFound(err) {
@@ -128,6 +129,17 @@ func (r *KubernetesImagePullerReconciler) reconcile(ctx context.Context, log log
 			return ctrl.Result{}, err
 		}
 		return ctrl.Result{Requeue: true}, nil
+	} else if err != nil {
+		return ctrl.Result{}, err
+	} else {
+		desiredRole := rbac.NewRole(instance)
+		if !reflect.DeepEqual(foundRole.Rules, desiredRole.Rules) {
+			foundRole.Rules = desiredRole.Rules
+			if err = r.Update(ctx, foundRole); err != nil {
+				log.Error(err, "Error updating create-daemonset role")
+				return ctrl.Result{}, err
+			}
+		}
 	}
 
 	foundRoleBinding := &rbacv1.RoleBinding{}
@@ -139,6 +151,25 @@ func (r *KubernetesImagePullerReconciler) reconcile(ctx context.Context, log log
 			return ctrl.Result{}, err
 		}
 		return ctrl.Result{Requeue: true}, nil
+	} else if err != nil {
+		return ctrl.Result{}, err
+	} else {
+		desiredRoleBinding := rbac.NewRoleBinding(instance)
+		if !reflect.DeepEqual(foundRoleBinding.RoleRef, desiredRoleBinding.RoleRef) {
+			// RoleRef is immutable — delete and let the next reconcile recreate it
+			if err = r.Delete(ctx, foundRoleBinding); err != nil {
+				log.Error(err, "Error deleting create-daemonset RoleBinding for roleRef update")
+				return ctrl.Result{}, err
+			}
+			return ctrl.Result{Requeue: true}, nil
+		}
+		if !reflect.DeepEqual(foundRoleBinding.Subjects, desiredRoleBinding.Subjects) {
+			foundRoleBinding.Subjects = desiredRoleBinding.Subjects
+			if err = r.Update(ctx, foundRoleBinding); err != nil {
+				log.Error(err, "Error updating create-daemonset RoleBinding")
+				return ctrl.Result{}, err
+			}
+		}
 	}
 
 	foundServiceAccount := &corev1.ServiceAccount{}
@@ -560,5 +591,7 @@ func (r *KubernetesImagePullerReconciler) SetupWithManager(mgr ctrl.Manager) err
 		For(&chev1alpha1.KubernetesImagePuller{}).
 		Owns(&appsv1.Deployment{}).
 		Owns(&corev1.ConfigMap{}).
+		Owns(&rbacv1.Role{}).
+		Owns(&rbacv1.RoleBinding{}).
 		Complete(r)
 }
