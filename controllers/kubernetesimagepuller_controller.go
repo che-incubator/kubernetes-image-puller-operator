@@ -36,6 +36,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/events"
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -54,6 +55,7 @@ type KubernetesImagePullerReconciler struct {
 	Log         logr.Logger
 	Scheme      *runtime.Scheme
 	IsOpenShift bool
+	Recorder    events.EventRecorder
 }
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
@@ -333,6 +335,29 @@ func (r *KubernetesImagePullerReconciler) reconcile(ctx context.Context, log log
 	return ctrl.Result{}, nil
 }
 
+func (r *KubernetesImagePullerReconciler) setCondition(instance *chev1alpha1.KubernetesImagePuller, cond metav1.Condition) bool {
+	if !apimeta.SetStatusCondition(&instance.Status.Conditions, cond) {
+		return false
+	}
+	if r.Recorder == nil {
+		return true
+	}
+
+	eventType := corev1.EventTypeNormal
+	if (cond.Type == chev1alpha1.ConditionDegraded && cond.Status == metav1.ConditionTrue) ||
+		(cond.Type == chev1alpha1.ConditionReady && cond.Status == metav1.ConditionFalse) {
+		eventType = corev1.EventTypeWarning
+	}
+
+	msg := cond.Message
+	if msg == "" {
+		msg = "condition cleared"
+	}
+
+	r.Recorder.Eventf(instance, nil, eventType, cond.Reason, "ConditionChanged", "%s: %s", cond.Type, msg)
+	return true
+}
+
 func (r *KubernetesImagePullerReconciler) updateConditions(ctx context.Context, log logr.Logger, instance *chev1alpha1.KubernetesImagePuller, result ctrl.Result, reconcileErr error) error {
 	// Re-fetch the instance to get the latest version before updating status
 	latest := &chev1alpha1.KubernetesImagePuller{}
@@ -349,21 +374,21 @@ func (r *KubernetesImagePullerReconciler) updateConditions(ctx context.Context, 
 	var changed bool
 
 	if reconcileErr != nil {
-		changed = apimeta.SetStatusCondition(&latest.Status.Conditions, metav1.Condition{
+		changed = r.setCondition(latest, metav1.Condition{
 			Type:               chev1alpha1.ConditionDegraded,
 			Status:             metav1.ConditionTrue,
 			ObservedGeneration: generation,
 			Reason:             "ReconcileError",
 			Message:            reconcileErr.Error(),
 		}) || changed
-		changed = apimeta.SetStatusCondition(&latest.Status.Conditions, metav1.Condition{
+		changed = r.setCondition(latest, metav1.Condition{
 			Type:               chev1alpha1.ConditionReady,
 			Status:             metav1.ConditionFalse,
 			ObservedGeneration: generation,
 			Reason:             "ReconcileError",
 			Message:            reconcileErr.Error(),
 		}) || changed
-		changed = apimeta.SetStatusCondition(&latest.Status.Conditions, metav1.Condition{
+		changed = r.setCondition(latest, metav1.Condition{
 			Type:               chev1alpha1.ConditionProgressing,
 			Status:             metav1.ConditionFalse,
 			ObservedGeneration: generation,
@@ -378,21 +403,21 @@ func (r *KubernetesImagePullerReconciler) updateConditions(ctx context.Context, 
 	}
 
 	if result != (ctrl.Result{}) {
-		changed = apimeta.SetStatusCondition(&latest.Status.Conditions, metav1.Condition{
+		changed = r.setCondition(latest, metav1.Condition{
 			Type:               chev1alpha1.ConditionProgressing,
 			Status:             metav1.ConditionTrue,
 			ObservedGeneration: generation,
 			Reason:             "Reconciling",
 			Message:            "Resource creation or update in progress",
 		}) || changed
-		changed = apimeta.SetStatusCondition(&latest.Status.Conditions, metav1.Condition{
+		changed = r.setCondition(latest, metav1.Condition{
 			Type:               chev1alpha1.ConditionReady,
 			Status:             metav1.ConditionFalse,
 			ObservedGeneration: generation,
 			Reason:             "Reconciling",
 			Message:            "Reconciliation in progress",
 		}) || changed
-		changed = apimeta.SetStatusCondition(&latest.Status.Conditions, metav1.Condition{
+		changed = r.setCondition(latest, metav1.Condition{
 			Type:               chev1alpha1.ConditionDegraded,
 			Status:             metav1.ConditionFalse,
 			ObservedGeneration: generation,
@@ -415,7 +440,7 @@ func (r *KubernetesImagePullerReconciler) updateConditions(ctx context.Context, 
 	}
 
 	if deploymentReady {
-		changed = apimeta.SetStatusCondition(&latest.Status.Conditions, metav1.Condition{
+		changed = r.setCondition(latest, metav1.Condition{
 			Type:               chev1alpha1.ConditionReady,
 			Status:             metav1.ConditionTrue,
 			ObservedGeneration: generation,
@@ -423,7 +448,7 @@ func (r *KubernetesImagePullerReconciler) updateConditions(ctx context.Context, 
 			Message:            "All owned resources are available",
 		}) || changed
 	} else {
-		changed = apimeta.SetStatusCondition(&latest.Status.Conditions, metav1.Condition{
+		changed = r.setCondition(latest, metav1.Condition{
 			Type:               chev1alpha1.ConditionReady,
 			Status:             metav1.ConditionFalse,
 			ObservedGeneration: generation,
@@ -433,14 +458,14 @@ func (r *KubernetesImagePullerReconciler) updateConditions(ctx context.Context, 
 	}
 
 	if deploymentReady {
-		changed = apimeta.SetStatusCondition(&latest.Status.Conditions, metav1.Condition{
+		changed = r.setCondition(latest, metav1.Condition{
 			Type:               chev1alpha1.ConditionProgressing,
 			Status:             metav1.ConditionFalse,
 			ObservedGeneration: generation,
 			Reason:             "ReconcileComplete",
 		}) || changed
 	} else {
-		changed = apimeta.SetStatusCondition(&latest.Status.Conditions, metav1.Condition{
+		changed = r.setCondition(latest, metav1.Condition{
 			Type:               chev1alpha1.ConditionProgressing,
 			Status:             metav1.ConditionTrue,
 			ObservedGeneration: generation,
@@ -449,7 +474,7 @@ func (r *KubernetesImagePullerReconciler) updateConditions(ctx context.Context, 
 		}) || changed
 	}
 
-	changed = apimeta.SetStatusCondition(&latest.Status.Conditions, metav1.Condition{
+	changed = r.setCondition(latest, metav1.Condition{
 		Type:               chev1alpha1.ConditionDegraded,
 		Status:             metav1.ConditionFalse,
 		ObservedGeneration: generation,

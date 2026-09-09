@@ -14,6 +14,8 @@ package controllers
 
 import (
 	"context"
+	"fmt"
+	"sort"
 	"testing"
 
 	chev1alpha1 "github.com/che-incubator/kubernetes-image-puller-operator/api/v1alpha1"
@@ -27,6 +29,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/events"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -1177,5 +1180,280 @@ func TestSetsReadyFalseWhenDeploymentNotAvailable(t *testing.T) {
 		t.Error("Expected Degraded condition to be set")
 	} else if cond.Status != metav1.ConditionFalse {
 		t.Errorf("Expected Degraded=False when deployment not available, got %s", cond.Status)
+	}
+}
+
+// drainEvents collects all pending events from a FakeRecorder.
+func drainEvents(rec *events.FakeRecorder) []string {
+	var events []string
+	for {
+		select {
+		case e := <-rec.Events:
+			events = append(events, e)
+		default:
+			return events
+		}
+	}
+}
+
+func hasEvent(events []string, eventType, reason string) bool {
+	prefix := eventType + " " + reason + " "
+	for _, e := range events {
+		if len(e) >= len(prefix) && e[:len(prefix)] == prefix {
+			return true
+		}
+	}
+	return false
+}
+
+func TestEmitsWarningEventsOnReconcileError(t *testing.T) {
+	cr := defaultImagePullerWithConfigMapNameAndDeploymentName()
+	c := setupClient(t, cr)
+	rec := events.NewFakeRecorder(10)
+	r := &KubernetesImagePullerReconciler{
+		Client:   c,
+		Scheme:   scheme.Scheme,
+		Log:      ctrl.Log.WithName("controllers").WithName("kubernetesimagepuller"),
+		Recorder: rec,
+	}
+
+	reconcileErr := fmt.Errorf("something went wrong")
+	if err := r.updateConditions(context.TODO(), r.Log, cr, ctrl.Result{}, reconcileErr); err != nil {
+		t.Fatalf("updateConditions error: %v", err)
+	}
+
+	events := drainEvents(rec)
+	if len(events) != 3 {
+		t.Fatalf("Expected 3 events, got %d: %v", len(events), events)
+	}
+
+	if !hasEvent(events, string(corev1.EventTypeWarning), "ReconcileError") {
+		t.Errorf("Expected Warning ReconcileError event, got: %v", events)
+	}
+	if !hasEvent(events, string(corev1.EventTypeNormal), "ReconcileError") {
+		t.Errorf("Expected Normal ReconcileError event (Progressing=False), got: %v", events)
+	}
+}
+
+func TestEmitsEventsOnProgressing(t *testing.T) {
+	cr := defaultImagePullerWithConfigMapNameAndDeploymentName()
+	c := setupClient(t, cr)
+	rec := events.NewFakeRecorder(10)
+	r := &KubernetesImagePullerReconciler{
+		Client:   c,
+		Scheme:   scheme.Scheme,
+		Log:      ctrl.Log.WithName("controllers").WithName("kubernetesimagepuller"),
+		Recorder: rec,
+	}
+
+	if err := r.updateConditions(context.TODO(), r.Log, cr, ctrl.Result{Requeue: true}, nil); err != nil {
+		t.Fatalf("updateConditions error: %v", err)
+	}
+
+	events := drainEvents(rec)
+	if len(events) != 3 {
+		t.Fatalf("Expected 3 events, got %d: %v", len(events), events)
+	}
+
+	wantEvents := []string{
+		"Normal Reconciling Progressing: Resource creation or update in progress",
+		"Warning Reconciling Ready: Reconciliation in progress",
+		"Normal Reconciling Degraded: condition cleared",
+	}
+	sort.Strings(events)
+	sort.Strings(wantEvents)
+	if diff := cmp.Diff(wantEvents, events); diff != "" {
+		t.Errorf("Events mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestEmitsEventsWhenDeploymentReady(t *testing.T) {
+	cr := defaultImagePullerWithConfigMapNameAndDeploymentName()
+	deployment := expectedDeployment(cr)
+	deployment.Status.AvailableReplicas = 1
+	deployment.Status.ReadyReplicas = 1
+	deployment.Status.Replicas = 1
+
+	c := setupClient(t, cr, deployment)
+	rec := events.NewFakeRecorder(10)
+	r := &KubernetesImagePullerReconciler{
+		Client:   c,
+		Scheme:   scheme.Scheme,
+		Log:      ctrl.Log.WithName("controllers").WithName("kubernetesimagepuller"),
+		Recorder: rec,
+	}
+
+	if err := r.updateConditions(context.TODO(), r.Log, cr, ctrl.Result{}, nil); err != nil {
+		t.Fatalf("updateConditions error: %v", err)
+	}
+
+	events := drainEvents(rec)
+	if len(events) != 3 {
+		t.Fatalf("Expected 3 events, got %d: %v", len(events), events)
+	}
+
+	wantEvents := []string{
+		"Normal AllResourcesReady Ready: All owned resources are available",
+		"Normal ReconcileComplete Progressing: condition cleared",
+		"Normal ReconcileComplete Degraded: condition cleared",
+	}
+	sort.Strings(events)
+	sort.Strings(wantEvents)
+	if diff := cmp.Diff(wantEvents, events); diff != "" {
+		t.Errorf("Events mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestEmitsEventsWhenDeploymentUnavailable(t *testing.T) {
+	cr := defaultImagePullerWithConfigMapNameAndDeploymentName()
+	deployment := expectedDeployment(cr)
+	deployment.Status.AvailableReplicas = 0
+
+	c := setupClient(t, cr, deployment)
+	rec := events.NewFakeRecorder(10)
+	r := &KubernetesImagePullerReconciler{
+		Client:   c,
+		Scheme:   scheme.Scheme,
+		Log:      ctrl.Log.WithName("controllers").WithName("kubernetesimagepuller"),
+		Recorder: rec,
+	}
+
+	if err := r.updateConditions(context.TODO(), r.Log, cr, ctrl.Result{}, nil); err != nil {
+		t.Fatalf("updateConditions error: %v", err)
+	}
+
+	events := drainEvents(rec)
+	if len(events) != 3 {
+		t.Fatalf("Expected 3 events, got %d: %v", len(events), events)
+	}
+
+	wantEvents := []string{
+		"Warning DeploymentNotAvailable Ready: Deployment does not have available replicas",
+		"Normal DeploymentNotAvailable Progressing: Waiting for deployment to become available",
+		"Normal ReconcileComplete Degraded: condition cleared",
+	}
+	sort.Strings(events)
+	sort.Strings(wantEvents)
+	if diff := cmp.Diff(wantEvents, events); diff != "" {
+		t.Errorf("Events mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestNoEventsWhenConditionsUnchanged(t *testing.T) {
+	cr := defaultImagePullerWithConfigMapNameAndDeploymentName()
+	deployment := expectedDeployment(cr)
+	deployment.Status.AvailableReplicas = 1
+	deployment.Status.ReadyReplicas = 1
+	deployment.Status.Replicas = 1
+
+	c := setupClient(t, cr, deployment)
+	rec := events.NewFakeRecorder(10)
+	r := &KubernetesImagePullerReconciler{
+		Client:   c,
+		Scheme:   scheme.Scheme,
+		Log:      ctrl.Log.WithName("controllers").WithName("kubernetesimagepuller"),
+		Recorder: rec,
+	}
+
+	// First call sets conditions
+	if err := r.updateConditions(context.TODO(), r.Log, cr, ctrl.Result{}, nil); err != nil {
+		t.Fatalf("first updateConditions error: %v", err)
+	}
+	drainEvents(rec) // discard first-call events
+
+	// Second call with same state should produce no events
+	if err := r.updateConditions(context.TODO(), r.Log, cr, ctrl.Result{}, nil); err != nil {
+		t.Fatalf("second updateConditions error: %v", err)
+	}
+
+	events := drainEvents(rec)
+	if len(events) != 0 {
+		t.Errorf("Expected 0 events on unchanged conditions, got %d: %v", len(events), events)
+	}
+}
+
+func TestEmitsEventsOnTransitionFromDegradedToReady(t *testing.T) {
+	cr := defaultImagePullerWithConfigMapNameAndDeploymentName()
+	cr.Status.Conditions = []metav1.Condition{
+		{
+			Type:   chev1alpha1.ConditionDegraded,
+			Status: metav1.ConditionTrue,
+			Reason: "ReconcileError",
+		},
+		{
+			Type:   chev1alpha1.ConditionReady,
+			Status: metav1.ConditionFalse,
+			Reason: "ReconcileError",
+		},
+		{
+			Type:   chev1alpha1.ConditionProgressing,
+			Status: metav1.ConditionFalse,
+			Reason: "ReconcileError",
+		},
+	}
+
+	deployment := expectedDeployment(cr)
+	deployment.Status.AvailableReplicas = 1
+	deployment.Status.ReadyReplicas = 1
+	deployment.Status.Replicas = 1
+
+	c := setupClient(t, cr, deployment)
+	rec := events.NewFakeRecorder(10)
+	r := &KubernetesImagePullerReconciler{
+		Client:   c,
+		Scheme:   scheme.Scheme,
+		Log:      ctrl.Log.WithName("controllers").WithName("kubernetesimagepuller"),
+		Recorder: rec,
+	}
+
+	if err := r.updateConditions(context.TODO(), r.Log, cr, ctrl.Result{}, nil); err != nil {
+		t.Fatalf("updateConditions error: %v", err)
+	}
+
+	events := drainEvents(rec)
+
+	// Ready should transition False->True, Degraded True->False, Progressing reason changes
+	if !hasEvent(events, string(corev1.EventTypeNormal), "AllResourcesReady") {
+		t.Errorf("Expected Normal AllResourcesReady event, got: %v", events)
+	}
+	if !hasEvent(events, string(corev1.EventTypeNormal), "ReconcileComplete") {
+		t.Errorf("Expected Normal ReconcileComplete event, got: %v", events)
+	}
+}
+
+func TestReconcileEmitsEvents(t *testing.T) {
+	cr := defaultImagePullerWithConfigMapNameAndDeploymentName()
+	cr.Status.ImagePullerImage = defaultImagePullerImage
+
+	deployment := expectedDeployment(cr)
+	deployment.Status.AvailableReplicas = 1
+	deployment.Status.ReadyReplicas = 1
+	deployment.Status.Replicas = 1
+
+	c := setupClient(t, cr, expectedConfigMap(cr), deployment,
+		createDaemonsetRole, createDaemonsetRoleBinding, defaultServiceAccount)
+	rec := events.NewFakeRecorder(10)
+	r := &KubernetesImagePullerReconciler{
+		Client:   c,
+		Scheme:   scheme.Scheme,
+		Log:      ctrl.Log.WithName("controllers").WithName("kubernetesimagepuller"),
+		Recorder: rec,
+	}
+
+	result, err := r.Reconcile(context.TODO(), ctrl.Request{NamespacedName: key})
+	if err != nil {
+		t.Fatalf("Got error in reconcile: %v", err)
+	}
+	if result != (ctrl.Result{}) {
+		t.Fatalf("Expected no requeue but got requeue")
+	}
+
+	events := drainEvents(rec)
+	if len(events) == 0 {
+		t.Fatal("Expected events to be emitted through Reconcile, got none")
+	}
+
+	if !hasEvent(events, string(corev1.EventTypeNormal), "AllResourcesReady") {
+		t.Errorf("Expected Normal AllResourcesReady event through Reconcile, got: %v", events)
 	}
 }
