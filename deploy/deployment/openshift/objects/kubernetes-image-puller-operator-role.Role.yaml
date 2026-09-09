@@ -9,20 +9,33 @@ rules:
   - ""
   resources:
   - pods
-  - services
-  - services/finalizers
-  - endpoints
-  - persistentvolumeclaims
-  - events
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
   - configmaps
-  - secrets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
   - serviceaccounts
   verbs:
   - create
   - delete
   - get
   - list
-  - patch
   - update
   - watch
 - apiGroups:
@@ -31,49 +44,47 @@ rules:
   - roles
   - rolebindings
   verbs:
-  - get
-  - list
-  - watch
   - create
   - delete
+  - get
+  - list
+  - update
+  - watch
 - apiGroups:
   - apps
   resources:
   - deployments
-  - daemonsets
-  - replicasets
-  - statefulsets
   verbs:
   - create
   - delete
   - get
   - list
-  - patch
   - update
   - watch
 - apiGroups:
   - apps
   resources:
-  - deployments/finalizers
+  - daemonsets
   verbs:
-  - update
-- apiGroups:
-  - monitoring.coreos.com
-  resources:
-  - servicemonitors
-  verbs:
-  - get
   - create
-- apiGroups:
-  - ""
-  resources:
-  - pods
-  verbs:
+  - delete
   - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - events.k8s.io
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
 - apiGroups:
   - che.eclipse.org
   resources:
-  - '*'
+  - kubernetesimagepullers
+  - kubernetesimagepullers/status
+  - kubernetesimagepullers/finalizers
   verbs:
   - create
   - delete
