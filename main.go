@@ -164,6 +164,7 @@ func main() {
 		Log:         ctrl.Log.WithName("controllers").WithName("KubernetesImagePuller"),
 		Scheme:      mgr.GetScheme(),
 		IsOpenShift: isOpenShift,
+		Recorder:    mgr.GetEventRecorder("KubernetesImagePuller"),
 	}
 
 	if err = imagePullerController.SetupWithManager(mgr); err != nil {
