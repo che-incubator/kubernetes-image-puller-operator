@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
+	"time"
 
 	chev1alpha1 "github.com/che-incubator/kubernetes-image-puller-operator/api/v1alpha1"
 	"github.com/che-incubator/kubernetes-image-puller-operator/pkg/config"
@@ -130,7 +131,7 @@ func (r *KubernetesImagePullerReconciler) reconcile(ctx context.Context, log log
 			log.Error(err, "Error creating create-daemonset role")
 			return ctrl.Result{}, err
 		}
-		return ctrl.Result{Requeue: true}, nil
+		return ctrl.Result{RequeueAfter: time.Second}, nil
 	} else if err != nil {
 		return ctrl.Result{}, err
 	} else {
@@ -152,7 +153,7 @@ func (r *KubernetesImagePullerReconciler) reconcile(ctx context.Context, log log
 			log.Error(err, "Error creating create-daemonset RoleBinding")
 			return ctrl.Result{}, err
 		}
-		return ctrl.Result{Requeue: true}, nil
+		return ctrl.Result{RequeueAfter: time.Second}, nil
 	} else if err != nil {
 		return ctrl.Result{}, err
 	} else {
@@ -163,7 +164,7 @@ func (r *KubernetesImagePullerReconciler) reconcile(ctx context.Context, log log
 				log.Error(err, "Error deleting create-daemonset RoleBinding for roleRef update")
 				return ctrl.Result{}, err
 			}
-			return ctrl.Result{Requeue: true}, nil
+			return ctrl.Result{RequeueAfter: time.Second}, nil
 		}
 		if !reflect.DeepEqual(foundRoleBinding.Subjects, desiredRoleBinding.Subjects) {
 			foundRoleBinding.Subjects = desiredRoleBinding.Subjects
@@ -182,7 +183,7 @@ func (r *KubernetesImagePullerReconciler) reconcile(ctx context.Context, log log
 			log.Error(err, "Error creating k8s-image-puller ServiceAccount")
 			return ctrl.Result{}, err
 		}
-		return ctrl.Result{Requeue: true}, nil
+		return ctrl.Result{RequeueAfter: time.Second}, nil
 	}
 
 	// Create the configmap if it does not exist
@@ -195,7 +196,7 @@ func (r *KubernetesImagePullerReconciler) reconcile(ctx context.Context, log log
 			return ctrl.Result{}, err
 		}
 
-		return ctrl.Result{Requeue: true}, nil
+		return ctrl.Result{RequeueAfter: time.Second}, nil
 	} else if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -246,7 +247,7 @@ func (r *KubernetesImagePullerReconciler) reconcile(ctx context.Context, log log
 	}
 
 	if configMapUpdated {
-		return ctrl.Result{Requeue: true}, nil
+		return ctrl.Result{RequeueAfter: time.Second}, nil
 	}
 
 	// Clean up any old ConfigMaps owned by this instance that no longer match the desired name
