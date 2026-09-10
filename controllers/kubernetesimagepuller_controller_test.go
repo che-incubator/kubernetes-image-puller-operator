@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"sort"
 	"testing"
+	"time"
 
 	chev1alpha1 "github.com/che-incubator/kubernetes-image-puller-operator/api/v1alpha1"
 	"github.com/che-incubator/kubernetes-image-puller-operator/pkg/config"
@@ -1246,7 +1247,7 @@ func TestEmitsEventsOnProgressing(t *testing.T) {
 		Recorder: rec,
 	}
 
-	if err := r.updateConditions(context.TODO(), r.Log, cr, ctrl.Result{Requeue: true}, nil); err != nil {
+	if err := r.updateConditions(context.TODO(), r.Log, cr, ctrl.Result{RequeueAfter: time.Second}, nil); err != nil {
 		t.Fatalf("updateConditions error: %v", err)
 	}
 
