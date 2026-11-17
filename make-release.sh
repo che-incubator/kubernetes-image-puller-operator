@@ -96,6 +96,10 @@ updateVersionFile() {
   sed -ri "s/VERSION \?= [0-9]+.[0-9]+.[0-9]/VERSION \?= ${RELEASE_VERSION}/g" Makefile
   git add Makefile
 
+  echo "[INFO] updateVersionFile: config/manager/kustomization.yaml"
+  sed -ri "s/newTag: [0-9]+\.[0-9]+\.[0-9]+/newTag: ${RELEASE_VERSION}/g" config/manager/kustomization.yaml
+  git add config/manager/kustomization.yaml
+
   git commit -m "ci: Update VERSION to ${RELEASE_VERSION}" --signoff
 }
 
