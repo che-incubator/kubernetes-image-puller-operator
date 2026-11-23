@@ -62,6 +62,10 @@ spec:
       - displayName: Tolerations
         path: tolerations
       statusDescriptors:
+      - displayName: Conditions
+        path: conditions
+        x-descriptors:
+        - urn:alm:descriptor:io.kubernetes.conditions
       - description: KubernetesImagePuller image in use.
         displayName: Image
         path: imagePullerImage
