@@ -27,4 +27,4 @@ kind: Kustomization
 images:
 - name: quay.io/eclipse/kubernetes-image-puller-operator:next
   newName: quay.io/eclipse/kubernetes-image-puller-operator
-  newTag: 1.0.4
+  newTag: 1.1.3
