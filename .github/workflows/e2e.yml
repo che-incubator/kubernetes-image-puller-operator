@@ -1,0 +1,151 @@
+#
+# Copyright (c) 2019-2026 Red Hat, Inc.
+# This program and the accompanying materials are made
+# available under the terms of the Eclipse Public License 2.0
+# which is available at https://www.eclipse.org/legal/epl-2.0/
+#
+# SPDX-License-Identifier: EPL-2.0
+#
+# Contributors:
+#   Red Hat, Inc. - initial API and implementation
+#
+
+name: E2E
+
+on:
+  pull_request:
+    paths:
+      - 'api/**'
+      - 'controllers/**'
+      - 'pkg/**'
+      - 'config/**'
+      - 'bundle/**'
+      - 'hack/e2e.sh'
+      - 'build/make/**'
+      - 'Makefile'
+      - '.github/workflows/e2e.yml'
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch, tag or SHA to verify (defaults to the dispatched ref)
+        required: false
+      images:
+        description: Comma separated images to pre-pull instead of the sample CR
+        required: false
+        default: 'pause=registry.k8s.io/pause:3.9'
+      bundle-image:
+        description: Published bundle image to verify with OLM (leave empty to skip)
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  kubernetes:
+    name: Kubernetes (manifests)
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.ref || github.ref }}
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.26'
+
+      - name: Start minikube cluster
+        uses: che-incubator/setup-minikube-action@fbf2aa1144e0088e9200fc2ecf5e26040ea2a8e4 # next
+        with:
+          minikube-version: v1.38.1
+
+      - name: Wait for cluster readiness
+        run: |
+          kubectl wait --for=condition=Ready nodes --all --timeout=120s
+          kubectl wait --for=condition=Ready pods --all -n kube-system --timeout=120s
+
+      - name: Install cert-manager
+        run: |
+          kubectl apply --validate=false -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.3/cert-manager.yaml
+          kubectl wait --for=condition=Available deployment --all -n cert-manager --timeout=300s
+
+      - name: Verify the release with the kustomize manifests
+        env:
+          E2E_IMAGES: ${{ inputs.images || 'pause=registry.k8s.io/pause:3.9' }}
+        run: |
+          ./hack/e2e.sh \
+            --install-method deploy \
+            --images "${E2E_IMAGES}" \
+            --artifact-dir "${RUNNER_TEMP}/e2e-artifacts"
+
+      - name: Collect diagnostics
+        if: failure()
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
+        with:
+          name: e2e-kubernetes
+          path: ${{ runner.temp }}/e2e-artifacts
+          if-no-files-found: ignore
+
+      - name: Undeploy the operator
+        if: always()
+        run: make undeploy || true
+
+  olm-bundle:
+    name: Kubernetes (OLM bundle)
+    if: ${{ inputs.bundle-image != '' }}
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.ref || github.ref }}
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.26'
+
+      - name: Start minikube cluster
+        uses: che-incubator/setup-minikube-action@fbf2aa1144e0088e9200fc2ecf5e26040ea2a8e4 # next
+        with:
+          minikube-version: v1.38.1
+
+      - name: Wait for cluster readiness
+        run: |
+          kubectl wait --for=condition=Ready nodes --all --timeout=120s
+          kubectl wait --for=condition=Ready pods --all -n kube-system --timeout=120s
+
+      - name: Download operator-sdk
+        run: make download-operator-sdk
+
+      - name: Install the published bundle with OLM
+        env:
+          E2E_BUNDLE_IMAGE: ${{ inputs.bundle-image }}
+          E2E_IMAGES: ${{ inputs.images || 'pause=registry.k8s.io/pause:3.9' }}
+        run: |
+          export PATH="${PWD}/bin:${PATH}"
+          operator-sdk olm install --version v0.28.0 --timeout 5m
+          # The pre-installed OperatorHub catalog regularly fails to serve its
+          # gRPC endpoint shortly after startup, which poisons resolution for
+          # every subscription. It is not needed to install a single bundle.
+          kubectl delete catalogsource operatorhubio-catalog -n olm --ignore-not-found
+          ./hack/e2e.sh \
+            --install-method olm \
+            --bundle-image "${E2E_BUNDLE_IMAGE}" \
+            --images "${E2E_IMAGES}" \
+            --artifact-dir "${RUNNER_TEMP}/e2e-artifacts"
+
+      - name: Collect diagnostics
+        if: failure()
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
+        with:
+          name: e2e-olm-bundle
+          path: ${{ runner.temp }}/e2e-artifacts
+          if-no-files-found: ignore
+
+      - name: Clean up the bundle installation
+        if: always()
+        run: bin/operator-sdk cleanup kubernetes-imagepuller-operator -n kubernetes-image-puller-operator || true
