@@ -9,8 +9,9 @@ make build          # Build operator binary
 make test           # Run unit tests (requires setup-envtest)
 make manifests      # Regenerate CRDs and RBAC from markers
 make generate       # Regenerate DeepCopy methods
-make bundle         # Regenerate OLM bundle (requires python-yq)
+make bundle         # Regenerate OLM bundle (uses the pinned Go yq)
 make gen-deployment # Regenerate deploy/deployment/ manifests
+make e2e            # Verify a release on the cluster in the current kubeconfig
 make docker-build   # Build container image
 ```
 
@@ -37,13 +38,15 @@ A validating webhook enforces that only one `KubernetesImagePuller` resource may
 | `olm-catalog/stable/` | Historical OLM catalog entries — **never modify** |
 | `deploy/deployment/` | Generated deployment manifests — **do not hand-edit** |
 | `build/` | Dockerfile, entrypoint, deploy.mk |
-| `hack/` | License header templates |
+| `hack/` | License header templates, e2e and OperatorHub scripts |
 
 ## Critical Gotchas
 
 ### Build System
 
-- **Python yq required for `make bundle`**: The bundle target uses `yq -riY`, which is specific to the Python `yq` wrapper (installed via `pip install yq`). The Go-based `yq` (Mike Farah) does not support the `-Y` flag. If `make bundle` fails to patch images in the CSV, fix them manually.
+- **Only the pinned Go `yq` is supported**: Bundle patching used to depend on the Python `yq` wrapper (`pip install yq`) because it used `yq -riY`. The Makefile now downloads Mike Farah's Go `yq` into `./bin/yq` (target `download-yq`, version pinned to `YQ_VERSION`) and uses it everywhere, including `gen-deployment` and `make-release.sh`. Do not rely on whatever `yq` is on `PATH` — a stale Python shim on `PATH` used to make `gen-deployment` silently delete the generated objects. `gen-deployment` now aborts if `yq` cannot read a document.
+
+- **`gen-deployment` needs `csplit`**: It splits `combined.yaml` with GNU `csplit`, then renames each part using `yq`.
 
 - **`.ONESHELL` is enabled**: Each Makefile recipe runs as a single shell script. Multi-line recipes share shell variables across lines. Some targets explicitly set `SHELL := /bin/bash` for bash features.
 
@@ -95,7 +98,9 @@ The OLM bundle package name is `kubernetes-imagepuller-operator` (no hyphen betw
 |----------|---------|---------|
 | `pr-check.yml` | Pull requests | Unit tests, image build, OLM scorecard |
 | `next-build.yml` | Push to `main` | Build and push `:next` image to quay.io |
-| `release.yml` | Manual dispatch | Tagged release (requires Python yq via pip) |
+| `release.yml` | Manual dispatch | Tagged release |
+| `e2e.yml` | Pull requests, manual dispatch | Runs `hack/e2e.sh` on minikube; optionally verifies a published OLM bundle |
+| `publish-operatorhub.yml` | Manual dispatch | Runs `hack/publish-operatorhub.sh` to open the OperatorHub pull requests |
 
 The Docker build runs `make test` inside the image build by default. The PR check workflow passes `SKIP_TESTS=true` to the Docker build since it runs tests separately.
 

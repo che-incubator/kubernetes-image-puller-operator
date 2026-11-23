@@ -1,0 +1,78 @@
+#
+# Copyright (c) 2019-2026 Red Hat, Inc.
+# This program and the accompanying materials are made
+# available under the terms of the Eclipse Public License 2.0
+# which is available at https://www.eclipse.org/legal/epl-2.0/
+#
+# SPDX-License-Identifier: EPL-2.0
+#
+# Contributors:
+#   Red Hat, Inc. - initial API and implementation
+#
+
+name: Publish to OperatorHub
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to publish in X.Y.Z format
+        required: true
+      ref:
+        description: Branch or tag with the release bundle (defaults to <version>-release)
+        required: false
+      fork-owner:
+        description: GitHub user that owns the community-operators forks (defaults to the actor running the workflow)
+        required: false
+      dry-run:
+        description: Prepare the bundles without pushing or opening pull requests
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish ${{ inputs.version }}
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.ref || format('{0}-release', inputs.version) }}
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.26'
+
+      - name: Configure Git credentials for the fork push
+        env:
+          GH_TOKEN: ${{ secrets.OPERATORHUB_TOKEN }}
+        run: gh auth setup-git --hostname github.com
+
+      - name: Copy the bundle into the OperatorHub repositories
+        env:
+          # A personal access token is required: GITHUB_TOKEN cannot push to the
+          # forks or open pull requests in other repositories.
+          GH_TOKEN: ${{ secrets.OPERATORHUB_TOKEN }}
+          RELEASE_VERSION: ${{ inputs.version }}
+          REQUESTED_FORK_OWNER: ${{ inputs.fork-owner }}
+          DRY_RUN: ${{ inputs.dry-run }}
+          GIT_NAME: ${{ vars.OPERATORHUB_GIT_NAME }}
+          GIT_EMAIL: ${{ vars.OPERATORHUB_GIT_EMAIL }}
+        run: |
+          args=(--version "${RELEASE_VERSION}"
+                --work-dir "${RUNNER_TEMP}/operatorhub"
+                --git-name "${GIT_NAME}"
+                --git-email "${GIT_EMAIL}")
+          if [[ -n "${REQUESTED_FORK_OWNER}" ]]; then
+            args+=(--fork-owner "${REQUESTED_FORK_OWNER}")
+          fi
+          if [[ "${DRY_RUN}" == "true" ]]; then
+            args+=(--dry-run)
+          fi
+          ./hack/publish-operatorhub.sh "${args[@]}"

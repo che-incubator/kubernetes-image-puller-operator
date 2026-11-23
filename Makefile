@@ -48,7 +48,7 @@ endif
 
 # Detect image tool
 ifeq ($(IMAGE_TOOL),)
-ifneq (,$(shell which docker))
+ifneq (,$(shell which docker 2>/dev/null))
 	IMAGE_TOOL := docker
 else
 	IMAGE_TOOL := podman
@@ -128,6 +128,12 @@ ENVTEST_K8S_VERSION = 1.36.0
 test: manifests generate fmt vet download-envtest ## Run tests.
 	KUBEBUILDER_ASSETS="$$($(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(shell pwd)/testbin -p path)" go test ./... -coverprofile cover.out
 
+# Verify a release against the cluster in the current kubeconfig. See hack/e2e.sh.
+E2E_INSTALL_METHOD ?= deploy
+E2E_NAMESPACE ?= kubernetes-image-puller-operator
+e2e: $(if $(filter olm,$(E2E_INSTALL_METHOD)),download-operator-sdk) ## Run the end-to-end release verification
+	./hack/e2e.sh --install-method $(E2E_INSTALL_METHOD) --namespace $(E2E_NAMESPACE) $(E2E_ARGS)
+
 download-envtest: ## Download setup-envtest tool
 	test -s $(ENVTEST) || GOBIN=$(shell pwd)/bin go install sigs.k8s.io/controller-runtime/tools/setup-envtest@release-0.24
 
@@ -137,7 +143,7 @@ kustomize-operator-image: download-kustomize
 	$(KUSTOMIZE) edit set image quay.io/eclipse/kubernetes-image-puller-operator:next=$(IMG)
 	cd "$(PROJECT_DIR)"
 
-gen-deployment: download-kustomize
+gen-deployment: download-kustomize download-yq
 	rm -rf $(DEPLOYMENT_DIR)
 	for TARGET_PLATFORM in kubernetes openshift; do
 		PLATFORM_DIR=$(DEPLOYMENT_DIR)/$${TARGET_PLATFORM}
@@ -151,7 +157,13 @@ gen-deployment: download-kustomize
 		# Split the giant files output by kustomize per-object
 		csplit -s -f "temp" --suppress-matched "$${COMBINED_FILENAME}" '/^---$$/' '{*}'
 		for file in temp??; do
-			name_kind=$$(yq -r '"\(.metadata.name).\(.kind)"' "$${file}")
+			name_kind=$$($(YQ) -r '"\(.metadata.name).\(.kind)"' "$${file}" 2>/dev/null) || name_kind=""
+			case "$${name_kind}" in
+				""|.)
+					echo "[ERROR] Unable to read name/kind from $${file}; is $(YQ) working?" >&2
+					exit 1
+					;;
+			esac
 			mv "$${file}" "$${OBJECTS_DIR}/$${name_kind}.yaml"
 		done
 
@@ -178,7 +190,7 @@ BUNDLE_GEN_FLAGS += --use-image-digests
 endif
 
 .PHONY: bundle
-bundle: generate manifests download-kustomize download-operator-sdk ## Generate OLM bundle
+bundle: generate manifests download-kustomize download-operator-sdk download-yq ## Generate OLM bundle
 	echo "[INFO] Updating OperatorHub bundle"
 
 	# Build default clusterserviceversion file
@@ -192,9 +204,9 @@ bundle: generate manifests download-kustomize download-operator-sdk ## Generate 
 	--output-dir $${BUNDLE_PATH}
 
 	CSV_PATH=$$($(MAKE) csv-path)
-	yq -riY '.metadata.annotations.containerImage = "'$(IMG)'"' $${CSV_PATH}
+	$(YQ) -i '.metadata.annotations.containerImage = "'$(IMG)'"' $${CSV_PATH}
 	# Update container image for container 'kuebrnetes-image-puller-operator' in the list of deployments
-	yq -riY '.spec.install.spec.deployments[0].spec.template.spec.containers[] |= (select(.name == "kubernetes-image-puller-operator") .image |= "'$(IMG)'")' $${CSV_PATH}
+	$(YQ) -i '.spec.install.spec.deployments[0].spec.template.spec.containers[] |= (select(.name == "kubernetes-image-puller-operator") .image |= "'$(IMG)'")' $${CSV_PATH}
 
 	# Copy bundle.Dockerfile to the bundle dir
  	# Update paths (since it is created in the root of the project) and labels
@@ -245,13 +257,13 @@ csv-path: ## Prints path to a clusterserviceversion file
 bundle-package: ## Prints a package name
 	echo $(PACKAGE)
 
-bundle-name: ## Prints a clusterserviceversion
+bundle-name: download-yq ## Prints a clusterserviceversion
 	CSV_PATH=$$($(MAKE) csv-path)
-	echo $$(yq -r ".metadata.name" "$${CSV_PATH}")
+	echo $$($(YQ) -r ".metadata.name" "$${CSV_PATH}")
 
-bundle-version: ## Prints a bundle version
+bundle-version: download-yq ## Prints a bundle version
 	CSV_PATH=$$($(MAKE) csv-path)
-	echo $$(yq -r ".spec.version" "$${CSV_PATH}")
+	echo $$($(YQ) -r ".spec.version" "$${CSV_PATH}")
 
 catalog-build: download-opm ## Build a catalog image
 	CATALOG_PATH=$$($(MAKE) catalog-path)
@@ -263,6 +275,33 @@ catalog-push: ## Push a catalog image
 	$(IMAGE_TOOL) push $(CATALOG_IMG)
 
 ##@ Utilities
+
+YQ ?= $(shell pwd)/bin/yq
+YQ_VERSION = v4.53.3
+download-yq: SHELL := /bin/bash
+download-yq: ## Download yq tool (Mike Farah's Go yq)
+	[[ -z "$(DEST)" ]] && dest=$(YQ) || dest=$(DEST)/yq
+	# Reuse the cached binary only when it is the pinned version; a stale yq from
+	# an older YQ_VERSION (or a different yq on PATH) is replaced.
+	if [[ -x "$${dest}" ]] && "$${dest}" --version 2>/dev/null | grep -q " $(YQ_VERSION)$$"; then
+		exit 0
+	fi
+
+	OS=$(shell go env GOOS)
+	ARCH=$(shell go env GOARCH)
+
+	echo "[INFO] Downloading yq version: $(YQ_VERSION)"
+	mkdir -p $$(dirname "$${dest}")
+	if ! curl -fsSL -o "$${dest}" https://github.com/mikefarah/yq/releases/download/$(YQ_VERSION)/yq_$${OS}_$${ARCH}; then
+		rm -f "$${dest}"
+		echo "[ERROR] Failed to download yq $(YQ_VERSION) for $${OS}/$${ARCH}" >&2
+		exit 1
+	fi
+	chmod +x "$${dest}"
+	"$${dest}" --version >/dev/null || { rm -f "$${dest}"; echo "[ERROR] The downloaded yq is not executable" >&2; exit 1; }
+
+yq-path: download-yq ## Prints path to yq
+	echo $(YQ)
 
 OPM ?= $(shell pwd)/bin/opm
 OPM_VERSION = v1.48.0

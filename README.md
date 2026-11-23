@@ -224,43 +224,61 @@ git checkout <RELEASE_VERSION>-release
 
 ##### Step 3: Test on Kubernetes and OpenShift
 
-Before publishing to OperatorHub, verify the release on both platforms.
+Before publishing to OperatorHub, verify the release on both platforms. [`hack/e2e.sh`](hack/e2e.sh) runs the full verification and works against any cluster (`make e2e` is a shortcut for it):
 
-**Testing on Kubernetes (e.g. Minikube):**
+- the operator deployment becomes available
+- a `KubernetesImagePuller` reaches `Ready`
+- the ConfigMap, Deployment and DaemonSet are created and the DaemonSet pods are scheduled and ready
+- updating the CR propagates to the ConfigMap and rolls the image puller Deployment
+- a second `KubernetesImagePuller` in the same namespace is rejected by the validating webhook
+- deleting the CR removes every owned resource
 
-1. Install cert-manager (required for webhooks on Kubernetes):
+Run the verification on a **clean** cluster: a second installation registers another cluster-scoped webhook, and the script refuses to run when one is already present.
+
+**Automated run:** the [`E2E`](.github/workflows/e2e.yml) workflow runs the verification on minikube for pull requests that touch the operator, and on demand. When dispatching it, pass the release branch or tag as `ref`, and optionally a published `bundle-image` to also verify the OLM installation path. Leave `bundle-image` empty to verify only the kustomize manifests.
+
+**Manual run on Kubernetes:**
+
 ```bash
 kubectl apply --validate=false -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.3/cert-manager.yaml
+kubectl wait --for=condition=Available deployment --all -n cert-manager --timeout=300s
+./hack/e2e.sh --install-method deploy
 ```
-2. Deploy the operator using the release catalog:
-```bash
-make deploy
-```
-3. Create a `KubernetesImagePuller` CR and verify:
-```bash
-kubectl apply -f config/samples/che_v1alpha1_kubernetesimagepuller.yaml -n kubernetes-image-puller-operator
-kubectl get pods -n kubernetes-image-puller-operator
-kubectl get daemonsets -A
-```
-4. Verify the image puller daemonset is running and pods are scheduled across nodes.
-5. Verify updating and deleting the CR works correctly.
 
-**Testing on OpenShift:**
+**Manual run on OpenShift** (cert-manager is not needed, OpenShift signs the webhook certificates itself):
 
-1. Deploy the operator:
 ```bash
-make deploy
+oc login --server=<SERVER> --token=<TOKEN>
+./hack/e2e.sh --install-method deploy
 ```
-2. Create a `KubernetesImagePuller` CR and verify:
+
+To verify the published OLM bundle instead of the manifests:
+
 ```bash
-oc apply -f config/samples/che_v1alpha1_kubernetesimagepuller.yaml -n kubernetes-image-puller-operator
-oc get pods -n kubernetes-image-puller-operator
-oc get daemonsets -A
+make e2e E2E_INSTALL_METHOD=olm \
+  E2E_ARGS="--bundle-image quay.io/eclipse/kubernetes-image-puller-operator-bundle:<RELEASE_VERSION>"
 ```
-3. Verify the image puller daemonset is running and pods are scheduled across nodes.
-4. Verify updating and deleting the CR works correctly.
 
 ##### Step 4: Publish to OperatorHub
+
+The [`Publish to OperatorHub`](.github/workflows/publish-operatorhub.yml) workflow automates this step. From the `<RELEASE_VERSION>-release` branch it ensures forks of both repositories exist, copies the bundle, commits it with DCO sign-off and opens (or updates) the pull requests to [`community-operators`](https://github.com/k8s-operatorhub/community-operators/) and [`community-operators-prod`](https://github.com/redhat-openshift-ecosystem/community-operators-prod/).
+
+One-off prerequisites — the workflow fails without them:
+
+- [ ] Create a personal access token. A classic token with the `repo` scope is the simplest option; a fine-grained token needs `Contents: Read and write` and `Pull requests: Read and write` on both OperatorHub repositories. The default `GITHUB_TOKEN` cannot push to your forks or open pull requests in other repositories.
+- [ ] Store it as the `OPERATORHUB_TOKEN` repository secret.
+- [ ] Set the `OPERATORHUB_GIT_NAME` and `OPERATORHUB_GIT_EMAIL` repository variables. They are used as the commit author and for the DCO sign-off, and must match the account that owns the token.
+- [ ] Make sure that account can push to its forks of both repositories. The workflow creates missing forks itself.
+- [ ] Dispatch the workflow once with `dry-run` enabled and review the commits it reports, then run it again with `dry-run` disabled. The `ref` input defaults to `<RELEASE_VERSION>-release`, so it must contain the bundle for that version.
+
+**Manual equivalent**, if you prefer to run it locally:
+
+```bash
+./hack/publish-operatorhub.sh --version <RELEASE_VERSION> --dry-run   # prepare the commits and review them
+./hack/publish-operatorhub.sh --version <RELEASE_VERSION>             # push to your forks and open the pull requests
+```
+
+The script wraps the older, fully manual flow, which it replaces:
 
 1. Fork and clone the [`community-operators`](https://github.com/k8s-operatorhub/community-operators) 
 and [`community-operators-prod`](https://github.com/redhat-openshift-ecosystem/community-operators-prod/) repositories.
@@ -269,9 +287,7 @@ and [`community-operators-prod`](https://github.com/redhat-openshift-ecosystem/c
 ./make-release.sh <RELEASE_VERSION> --prepare-community-operators-update --community-operators-repository-dir <PROJECT_DIR>/community-operators-prod
 ./make-release.sh <RELEASE_VERSION> --prepare-community-operators-update --community-operators-repository-dir <PROJECT_DIR>/community-operators
 ```
-3. Open two separate pull requests to [`community-operators`](https://github.com/k8s-operatorhub/community-operators/)
-and [`community-operators-prod`](https://github.com/redhat-openshift-ecosystem/community-operators-prod/) repositories. 
-Examples of the PRs:
+3. Commit the new bundle with `git commit -s`, push it to your fork and open two separate pull requests. Examples of the PRs:
 - https://github.com/k8s-operatorhub/community-operators/pull/8764
 - https://github.com/redhat-openshift-ecosystem/community-operators-prod/pull/10447
 

@@ -13,6 +13,14 @@
 
 set -e
 
+# Resolve yq from the repository tooling so the script does not depend on
+# whatever happens to be on PATH.
+YQ="$(make yq-path 2>/dev/null | tail -1)"
+if [[ -z "${YQ}" || ! -x "${YQ}" ]]; then
+  echo "[ERROR] Unable to locate yq. Run 'make download-yq' first." >&2
+  exit 1
+fi
+
 init() {
   RELEASE_VERSION="$1"
   RELEASE_IMAGE="$(make base-image):${RELEASE_VERSION}"
@@ -129,10 +137,10 @@ releaseOlmFiles() {
 
   make bundle IMG="${RELEASE_IMAGE}"
 
-  yq -riY '.metadata.name = "'${PACKAGE}'.v'${RELEASE_VERSION}'"' ${CSV_PATH}
-  yq -riY '.metadata.annotations.createdAt = "'${CREATE_TIMESTAMP}'"' ${CSV_PATH}
-  yq -riY '.spec.version = "'${RELEASE_VERSION}'"' ${CSV_PATH}
-  yq -riY '.spec.replaces = "'${PACKAGE}'.v'${CURRENT_VERSION}'"' ${CSV_PATH}
+  ${YQ} -i '.metadata.name = "'${PACKAGE}'.v'${RELEASE_VERSION}'"' ${CSV_PATH}
+  ${YQ} -i '.metadata.annotations.createdAt = "'${CREATE_TIMESTAMP}'"' ${CSV_PATH}
+  ${YQ} -i '.spec.version = "'${RELEASE_VERSION}'"' ${CSV_PATH}
+  ${YQ} -i '.spec.replaces = "'${PACKAGE}'.v'${CURRENT_VERSION}'"' ${CSV_PATH}
 
   make license "$(make bundle-path)"
 
@@ -155,7 +163,8 @@ releaseOlmBundle() {
   echo "[INFO] Catalog image : ${CATALOG_IMAGE}"
   echo "[INFO] Bundle image  : ${BUNDLE_IMAGE}"
 
-  if [[ $(yq -r '.entries[] | select(.name == "'${BUNDLE_NAME}'")' "${CHANNEL_PATH}") ]]; then
+  if [[ -n "$(${YQ} -r '.entries[] | select(.name == "'${BUNDLE_NAME}'") | .name' "${CHANNEL_PATH}")" ]] && \
+    [[ "$(${YQ} -r '.entries[] | select(.name == "'${BUNDLE_NAME}'") | .name' "${CHANNEL_PATH}")" != "null" ]]; then
     echo "[ERROR] Bundle ${BUNDLE_NAME} already exists in the catalog"
     exit 1
   else
@@ -163,9 +172,9 @@ releaseOlmBundle() {
     make bundle-build bundle-push
 
     echo "[INFO] releaseOlmBundle :: Add bundle to the catalog..."
-    LAST_BUNDLE_NAME=$(yq -r '.entries | .[length - 1].name' "${CHANNEL_PATH}")
+    LAST_BUNDLE_NAME=$(${YQ} -r '.entries | .[length - 1].name' "${CHANNEL_PATH}")
     make bundle-render
-    yq -riY '(.entries) += [{"name": "'${BUNDLE_NAME}'", "replaces": "'${LAST_BUNDLE_NAME}'"}]' "${CHANNEL_PATH}"
+    ${YQ} -i '(.entries) += [{"name": "'${BUNDLE_NAME}'", "replaces": "'${LAST_BUNDLE_NAME}'"}]' "${CHANNEL_PATH}"
   fi
 
   echo "[INFO] releaseOlmBundle :: Build and push the catalog image to quay.io..."
