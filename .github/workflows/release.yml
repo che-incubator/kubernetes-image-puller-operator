@@ -24,6 +24,10 @@ on:
         description: If true, tags will be recreated. Use with caution
         required: false
         default: 'false'
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   build:
     runs-on: ubuntu-22.04
@@ -89,13 +93,13 @@ jobs:
           RELEASE_VERSION: ${{ github.event.inputs.version }}
           FORCE_RECREATE_TAGS: ${{ github.event.inputs.forceRecreateTags }}
           IMAGE_PULLER_IMAGE: ${{ github.event.inputs.imagePullerImage }}
-          GITHUB_TOKEN: ${{ secrets.CHE_INCUBATOR_BOT_GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           echo "RELEASE_VERSION=${RELEASE_VERSION}"
           BRANCH=${RELEASE_VERSION%.*}.x
           echo "BRANCH=${BRANCH}"
-          git config --global user.name "Anatolii Bazko"
-          git config --global user.email "abazko@redhat.com"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           set -e
 
